@@ -6,7 +6,8 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { numberTransformer } from '@/common/transformers/number.transformer.js';
+import type { Relation } from 'typeorm';
+import { numberTransformer } from '../../common/transformers/number.transformer.js';
 import { Outlet } from './outlet.entity.js';
 
 @Entity('outlet_receipt_counters')
@@ -23,5 +24,5 @@ export class OutletReceiptCounter {
     name: 'outlet_id',
     foreignKeyConstraintName: 'fk_receipt_counters_outlet',
   })
-  outlet: Outlet;
+  outlet: Relation<Outlet>;
 }

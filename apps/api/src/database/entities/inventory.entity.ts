@@ -10,6 +10,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { MenuItem } from './menu-item.entity.js';
 import { Outlet } from './outlet.entity.js';
 
@@ -38,7 +39,7 @@ export class Inventory {
     name: 'outlet_id',
     foreignKeyConstraintName: 'fk_inventory_outlet',
   })
-  outlet: Outlet;
+  outlet: Relation<Outlet>;
 
   @ManyToOne(() => MenuItem, {
     onDelete: 'RESTRICT',
@@ -47,7 +48,7 @@ export class Inventory {
     name: 'menu_item_id',
     foreignKeyConstraintName: 'fk_inventory_menu_item',
   })
-  menuItem: MenuItem;
+  menuItem: Relation<MenuItem>;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

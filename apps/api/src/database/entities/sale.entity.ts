@@ -11,7 +11,7 @@ import {
   Unique,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
-import { numberTransformer } from '@/common/transformers/number.transformer.js';
+import { numberTransformer } from '../../common/transformers/number.transformer.js';
 import { Outlet } from './outlet.entity.js';
 import { SaleItem } from './sale-item.entity.js';
 
@@ -50,7 +50,7 @@ export class Sale {
     name: 'outlet_id',
     foreignKeyConstraintName: 'fk_sales_outlet',
   })
-  outlet: Outlet;
+  outlet: Relation<Outlet>;
 
   @OneToMany(() => SaleItem, (item) => item.sale, {
     cascade: true,

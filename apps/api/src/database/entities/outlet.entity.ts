@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
   CreateDateColumn,
   Unique,
+  JoinColumn,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { Company } from './company.entity.js';
@@ -40,13 +41,17 @@ export class Outlet {
   @ManyToOne(() => Company, (company) => company.outlets, {
     onDelete: 'CASCADE',
   })
-  company: Company;
+  @JoinColumn({
+    name: 'company_id',
+    foreignKeyConstraintName: 'fk_outlet_company',
+  })
+  company: Relation<Company>;
 
   @OneToMany(() => OutletMenuItem, (outletMenuItem) => outletMenuItem.outlet)
-  assignedMenuItems: OutletMenuItem[];
+  assignedMenuItems: Relation<OutletMenuItem[]>;
 
   @OneToMany(() => Inventory, (inventory) => inventory.outlet)
-  inventory: Inventory[];
+  inventory: Relation<Inventory[]>;
 
   @OneToMany(() => Sale, (sale) => sale.outlet)
   sales: Relation<Sale[]>;

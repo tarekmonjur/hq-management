@@ -4,7 +4,9 @@ import { LoggerModule } from 'nestjs-pino';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { envValidationSchema } from './config/index.js';
-import { TypeOrmConfigService } from './database/database.service.js';
+import { TypeOrmConfigService } from './database/service/database.service.js';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { TypeOrmConfigService } from './database/database.service.js';
       useClass: TypeOrmConfigService,
     }),
   ],
-  controllers: [],
-  providers: [ConfigService, TypeOrmConfigService],
+  controllers: [AppController],
+  providers: [AppService, ConfigService, TypeOrmConfigService],
 })
 export class AppModule {}

@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: hq-api
-    restart: unless-stopped
+    restart: always
     env_file:
       - ./apps/api/.env
     environment:
@@ -26,12 +26,12 @@ services:
         condition: service_healthy
     # post_start:
     #   - command: /bin/sh -c "npm run migration:run"
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:3001/api/v1/health']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s    
+    # healthcheck:
+    #   test: ['CMD', 'wget', '-qO-', 'http://localhost:3001/api/v1/health']
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 30s    
 
   # Run migrations once, then exit
   # migrate:

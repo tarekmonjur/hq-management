@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
-import { numberTransformer } from '@/common/transformers/number.transformer.js';
+import { numberTransformer } from '../../common/transformers/number.transformer.js';
 import { MenuItem } from './menu-item.entity.js';
 import { Sale } from './sale.entity.js';
 
@@ -61,5 +61,5 @@ export class SaleItem {
     name: 'menu_item_id',
     foreignKeyConstraintName: 'fk_sale_items_menu_item',
   })
-  menuItem: MenuItem;
+  menuItem: Relation<MenuItem>;
 }

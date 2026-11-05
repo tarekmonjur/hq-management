@@ -10,7 +10,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { numberTransformer } from '@/common/transformers/number.transformer.js';
+import type { Relation } from 'typeorm';
+import { numberTransformer } from '../../common/transformers/number.transformer.js';
 import { Outlet } from './outlet.entity.js';
 import { MenuItem } from './menu-item.entity.js';
 
@@ -47,14 +48,14 @@ export class OutletMenuItem {
     name: 'outlet_id',
     foreignKeyConstraintName: 'fk_outlet_menu_items_outlet',
   })
-  outlet: Outlet;
+  outlet: Relation<Outlet>;
 
   @ManyToOne(() => MenuItem, { onDelete: 'RESTRICT' })
   @JoinColumn({
     name: 'menu_item_id',
     foreignKeyConstraintName: 'fk_outlet_menu_items_menu_item',
   })
-  menuItem: MenuItem;
+  menuItem: Relation<MenuItem>;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

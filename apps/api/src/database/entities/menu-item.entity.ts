@@ -7,7 +7,8 @@ import {
   UpdateDateColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { numberTransformer } from '@/common/transformers/number.transformer.js';
+import { numberTransformer } from '../../common/transformers/number.transformer.js';
+import { MenuItemUnit } from '../../common/enums/menu-item.enum.js';
 
 @Entity('menu_items')
 @Unique('uq_menu_items_name', ['name'])
@@ -30,6 +31,13 @@ export class MenuItem {
     transformer: numberTransformer,
   })
   basePrice: number;
+
+  @Column({
+    type: 'enum',
+    enum: MenuItemUnit,
+    nullable: true,
+  })
+  unit: MenuItemUnit;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
