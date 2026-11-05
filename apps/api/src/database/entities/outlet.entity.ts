@@ -1,4 +1,3 @@
-// src/database/entities/outlet.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,15 +5,15 @@ import {
   ManyToOne,
   OneToMany,
   Index,
-  DeleteDateColumn,
   UpdateDateColumn,
   CreateDateColumn,
   Unique,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { Company } from './company.entity.js';
 import { OutletMenuItem } from './outlet-menu-item.entity.js';
 import { Inventory } from './inventory.entity.js';
-import { Sale } from './sale.entity';
+import { Sale } from './sale.entity.js';
 
 @Entity('outlets')
 @Index('idx_outlets_company', ['companyId'])
@@ -49,8 +48,8 @@ export class Outlet {
   @OneToMany(() => Inventory, (inventory) => inventory.outlet)
   inventory: Inventory[];
 
-  // @OneToMany(() => Sale, (s) => s.outlet)
-  // sales: Sale[];
+  @OneToMany(() => Sale, (sale) => sale.outlet)
+  sales: Relation<Sale[]>;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

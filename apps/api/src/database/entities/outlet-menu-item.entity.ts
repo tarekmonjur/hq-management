@@ -9,7 +9,6 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
 } from 'typeorm';
 import { numberTransformer } from '@/common/transformers/number.transformer.js';
 import { Outlet } from './outlet.entity.js';

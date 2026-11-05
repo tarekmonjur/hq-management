@@ -6,7 +6,6 @@ import {
   Check,
   UpdateDateColumn,
   CreateDateColumn,
-  DeleteDateColumn,
 } from 'typeorm';
 import { numberTransformer } from '@/common/transformers/number.transformer.js';
 

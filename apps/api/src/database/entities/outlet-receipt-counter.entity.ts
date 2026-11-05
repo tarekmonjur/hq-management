@@ -15,7 +15,7 @@ export class OutletReceiptCounter {
   @PrimaryGeneratedColumn('uuid')
   outletId: string;
 
-  @Column({ type: 'bigint', default: 0, transformer: numberTransformer })
+  @Column({ type: 'bigint', nullable: false, transformer: numberTransformer })
   lastNumber: number;
 
   @OneToOne(() => Outlet, { onDelete: 'CASCADE' })

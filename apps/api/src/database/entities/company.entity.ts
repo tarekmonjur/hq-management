@@ -1,4 +1,3 @@
-// src/database/entities/company.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,7 +5,6 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
 } from 'typeorm';
 import { Outlet } from './outlet.entity.js';
 
