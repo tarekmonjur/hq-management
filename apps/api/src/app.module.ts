@@ -7,6 +7,7 @@ import { envValidationSchema } from './config/index.js';
 import { TypeOrmConfigService } from './database/service/database.service.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { MenuItemsModule } from './modules/menu-items/menu-items.module.js';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
     }),
     HealthModule,
     AuthModule,
+    MenuItemsModule,
   ],
   controllers: [],
   providers: [ConfigService, TypeOrmConfigService],

@@ -21,7 +21,7 @@ export class MenuItem {
   name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column('numeric', {
     precision: 10,
@@ -30,14 +30,14 @@ export class MenuItem {
     nullable: true,
     transformer: numberTransformer,
   })
-  basePrice: number;
+  basePrice: number | null;
 
   @Column({
     type: 'enum',
     enum: MenuItemUnit,
     nullable: true,
   })
-  unit: MenuItemUnit;
+  unit: MenuItemUnit | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

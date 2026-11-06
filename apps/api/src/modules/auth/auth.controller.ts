@@ -51,11 +51,11 @@ export class AuthController {
   @ApiAcceptedResponse({ type: ApiResponseDto })
   @ApiBadRequestResponse({ type: ApiErrorResponseDto })
   @ApiTooManyRequestsResponse({ type: ApiErrorResponseDto })
-  async register(@Body() dto: RegisterDto): Promise<{ message: string }> {
+  async register(@Body() dto: RegisterDto): Promise<{ data: null, message: string }> {
     await this.authService.register(dto);
     return {
-      message:
-        'If the email is valid, registration has been processed successfully.',
+      data: null,
+      message: 'Registration has been processed successfully.',
     };
   }
 

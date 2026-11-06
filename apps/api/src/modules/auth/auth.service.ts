@@ -14,7 +14,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 import type { Request } from 'express';
 
 import { UserRole } from '../../common/enums/user.enum.js';
-import { User, UserSession } from '../../database/entities/index.js';
+import { User, UserSession, Outlet } from '../../database/entities/index.js';
 import { JwtPayload } from './interfaces/jwt-payload.interface.js';
 import { AuthTokenPair } from './interfaces/auth-token-pair.interface.js';
 import { SessionSummary } from './interfaces/session-summary.interface.js';
@@ -37,6 +37,8 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(UserSession)
     private readonly userSessionRepository: Repository<UserSession>,
+    @InjectRepository(Outlet)
+    private readonly outletRepository: Repository<Outlet>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
@@ -65,8 +67,23 @@ export class AuthService {
     });
 
     if (existingUser) {
-      // Generic 202 response without modifying or disclosing the existing account
-      return;
+      throw new BadRequestException('User already exists');
+    }
+
+    if (dto.role !== UserRole.HQ_ADMIN && !dto.outletId) {
+      throw new BadRequestException('Either role or outlet ID is required');
+    }
+
+    if (dto.role !== UserRole.HQ_ADMIN) {
+      if (!dto.outletId) {
+        throw new BadRequestException('Outlet ID is required for outlet user');
+      }
+      const outlet = await this.outletRepository.findOne({
+        where: { id: dto.outletId },
+      });
+      if (!outlet) {
+        throw new BadRequestException('Outlet not found');
+      }
     }
 
     try {
@@ -75,8 +92,8 @@ export class AuthService {
         fullName: trimmedFullName,
         mobileNo: dto.mobileNo?.trim() || null,
         passwordHash,
-        role: UserRole.OUTLET_STAFF,
-        outletId: null,
+        role: dto.role || UserRole.OUTLET_STAFF,
+        outletId: dto.outletId || null,
         isActive: true,
       });
 
@@ -239,7 +256,7 @@ export class AuthService {
         .createQueryBuilder(UserSession, 'session')
         .setLock('pessimistic_write')
         .addSelect('session.refreshTokenHash')
-        .leftJoinAndSelect('session.user', 'user')
+        .innerJoinAndSelect('session.user', 'user')
         .where('session.sessionId = :sessionId', { sessionId: dto.sessionId })
         .getOne();
 

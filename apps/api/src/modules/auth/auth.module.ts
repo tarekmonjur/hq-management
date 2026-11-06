@@ -6,7 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
-import { User, UserSession } from '../../database/entities/index.js';
+import { Outlet, User, UserSession } from '../../database/entities/index.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { AuthService } from './auth.service.js';
@@ -16,7 +16,7 @@ import { parseDurationToSeconds } from './utils/duration.util.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserSession]),
+    TypeOrmModule.forFeature([User, UserSession, Outlet]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
