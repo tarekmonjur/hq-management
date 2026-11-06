@@ -1,0 +1,53 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+
+import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Roles } from '../../common/decorators/roles.decorator.js';
+import { UserRole } from '../../common/enums/user.enum.js';
+import { RolesGuard } from '../../common/guards/roles.guard.js';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { ListOutletsQueryDto } from './dto/list-outlets-query.dto.js';
+import { OutletListApiResponseDto } from './dto/outlet-response.dto.js';
+import { OutletsService } from './outlets.service.js';
+
+@ApiTags('outlets')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.HQ_ADMIN)
+@Controller('outlets')
+export class OutletsController {
+  constructor(private readonly outletsService: OutletsService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List company outlets',
+    description:
+      'Returns outlets belonging to the authenticated HQ admin’s company. The company scope is derived from the user record.',
+  })
+  @ApiOkResponse({ type: OutletListApiResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: ListOutletsQueryDto,
+  ) {
+    return this.outletsService.findCompanyOutlets(user.sub, query);
+  }
+}
