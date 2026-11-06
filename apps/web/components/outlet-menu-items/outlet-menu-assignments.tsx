@@ -2,15 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  useEffect,
-  useState,
-  type ChangeEventHandler,
-  type FocusEventHandler,
-  type FormEvent,
-  type Ref,
-} from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -20,9 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentUserRequest } from "@/lib/api/auth";
 import { ApiError, type FieldErrors } from "@/lib/api/client";
-import { listMenuItems } from "@/lib/api/menu-items";
 import {
-  assignOutletMenuItem,
   listOutletMenuItems,
   removeOutletMenuItem,
   updateOutletMenuPrice,
@@ -31,10 +23,8 @@ import {
 import { listOutlets } from "@/lib/api/outlets";
 import { canManageOutletMenus } from "@/lib/auth/roles";
 import {
-  assignOutletMenuItemSchema,
   outletPriceSchema,
   readOutletMenuItemsQuery,
-  type AssignOutletMenuItemValues,
   type OutletPriceValues,
 } from "@/lib/validations/outlet-menu-items";
 
@@ -42,7 +32,6 @@ export function OutletMenuAssignments() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
 
@@ -148,21 +137,22 @@ export function OutletMenuAssignments() {
 
   return (
     <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Outlet menus</h1>
-        <p className="text-sm text-zinc-500">
-          {canManage ? "Assign menu items to your company outlets." : "Menu items for your outlet."}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Outlet menus</h1>
+          <p className="text-sm text-zinc-500">
+            {canManage ? "Assignments for your company outlets." : "Menu items for your outlet."}
+          </p>
+        </div>
+        {profile.isSuccess && canManage ? (
+          <Link
+            href="/outlet-menu-items/new"
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background"
+          >
+            Assign menu item
+          </Link>
+        ) : null}
       </div>
-
-      {profile.isSuccess && canManage ? (
-        <AssignForm
-          onAssigned={async (message) => {
-            toast.success(message || "Menu item assigned");
-            await queryClient.invalidateQueries({ queryKey: ["outlet-menu-items"] });
-          }}
-        />
-      ) : null}
 
       <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={applyFilters}>
         <TextFilter
@@ -233,127 +223,6 @@ export function OutletMenuAssignments() {
         </div>
       </div>
     </section>
-  );
-}
-
-function AssignForm({ onAssigned }: { onAssigned: (message: string) => Promise<void> }) {
-  const [outletSearch, setOutletSearch] = useState("");
-  const [menuSearch, setMenuSearch] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const outlets = useQuery({
-    queryKey: ["outlets", "picker", outletSearch],
-    queryFn: () =>
-      listOutlets({ page: 1, limit: 20, search: outletSearch.trim() || undefined }),
-  });
-  const menuItems = useQuery({
-    queryKey: ["menu-items", "picker", menuSearch],
-    queryFn: () =>
-      listMenuItems({ page: 1, limit: 20, search: menuSearch.trim() || undefined }),
-  });
-  const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { errors, isSubmitted },
-  } = useForm<AssignOutletMenuItemValues>({
-    resolver: zodResolver(assignOutletMenuItemSchema),
-    defaultValues: { outletId: "", menuItemId: "", outletPrice: "", isActive: false },
-  });
-  const assign = useMutation({
-    mutationFn: assignOutletMenuItem,
-    onSuccess: async (response) => {
-      reset();
-      setFormError(null);
-      await onAssigned(response.message);
-    },
-  });
-
-  useEffect(() => {
-    if (!(assign.error instanceof ApiError)) {
-      return;
-    }
-    if (!assign.error.fieldErrors) {
-      setFormError(assign.error.message);
-      return;
-    }
-    setFormError(null);
-    for (const field of ["outletId", "menuItemId", "outletPrice", "isActive"] as const) {
-      const message = assign.error.fieldErrors[field]?.[0];
-      if (message) {
-        setError(field, { message });
-      }
-    }
-  }, [assign.error, setError]);
-
-  return (
-    <form
-      className="grid gap-4 rounded-xl border border-zinc-200 p-4 md:grid-cols-2 dark:border-zinc-800"
-      noValidate
-      onSubmit={handleSubmit((values) => {
-        setFormError(null);
-        assign.mutate({
-          outletId: values.outletId,
-          menuItemId: values.menuItemId,
-          isActive: values.isActive,
-          ...(values.outletPrice.trim() === ""
-            ? {}
-            : { outletPrice: Number(values.outletPrice) }),
-        });
-      })}
-    >
-      <SearchableSelect
-        id="outletId"
-        label="Outlet"
-        search={outletSearch}
-        onSearch={setOutletSearch}
-        options={(outlets.data?.items ?? []).map((outlet) => ({
-          id: outlet.id,
-          label: outlet.name,
-        }))}
-        error={isSubmitted ? errors.outletId?.message : undefined}
-        {...register("outletId")}
-      />
-      <SearchableSelect
-        id="menuItemId"
-        label="Menu item"
-        search={menuSearch}
-        onSearch={setMenuSearch}
-        options={(menuItems.data?.items ?? []).map((item) => ({
-          id: item.id,
-          label: item.name,
-        }))}
-        error={isSubmitted ? errors.menuItemId?.message : undefined}
-        {...register("menuItemId")}
-      />
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="outletPrice">Price override</Label>
-        <Input
-          id="outletPrice"
-          inputMode="decimal"
-          placeholder="Optional"
-          aria-invalid={Boolean(isSubmitted && errors.outletPrice)}
-          {...register("outletPrice")}
-        />
-        {isSubmitted && errors.outletPrice?.message ? (
-          <p className="text-sm text-red-600 dark:text-red-400">{errors.outletPrice.message}</p>
-        ) : null}
-      </div>
-      <label className="flex h-11 items-end gap-2 text-sm">
-        <input type="checkbox" className="size-4" {...register("isActive")} />
-        Active
-      </label>
-      {formError ? (
-        <p className="text-sm text-red-600 md:col-span-2 dark:text-red-400">{formError}</p>
-      ) : null}
-      <div className="md:col-span-2">
-        {assign.isPending ? (
-          <Skeleton className="h-11 w-32" />
-        ) : (
-          <Button type="submit">Assign</Button>
-        )}
-      </div>
-    </form>
   );
 }
 
@@ -524,59 +393,6 @@ function DeleteAssignment({ item }: { item: OutletMenuItem }) {
           Delete
         </Button>
       )}
-    </div>
-  );
-}
-
-function SearchableSelect({
-  id,
-  label,
-  search,
-  onSearch,
-  options,
-  error,
-  name,
-  onChange,
-  onBlur,
-  ref,
-}: {
-  id: string;
-  label: string;
-  search: string;
-  onSearch: (value: string) => void;
-  options: { id: string; label: string }[];
-  error?: string;
-  name: string;
-  onChange: ChangeEventHandler<HTMLSelectElement>;
-  onBlur: FocusEventHandler<HTMLSelectElement>;
-  ref: Ref<HTMLSelectElement>;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={`${id}-search`}>{label}</Label>
-      <Input
-        id={`${id}-search`}
-        value={search}
-        placeholder={`Search ${label.toLowerCase()}`}
-        onChange={(event) => onSearch(event.target.value)}
-      />
-      <select
-        id={id}
-        name={name}
-        ref={ref}
-        onChange={onChange}
-        onBlur={onBlur}
-        aria-invalid={Boolean(error)}
-        className="h-11 rounded-lg border border-zinc-300 bg-background px-3 text-sm dark:border-zinc-700"
-      >
-        <option value="">Select {label.toLowerCase()}</option>
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
     </div>
   );
 }
