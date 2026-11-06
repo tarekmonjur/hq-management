@@ -22,6 +22,7 @@ export const dataSourceOptions: DataSourceOptions = {
   entities: [join(currentDir, 'entities', '**', '*.entity.{ts,js}')],
   migrations: [join(currentDir, 'migrations', '*.{ts,js}')],
   namingStrategy: new CustomNamingStrategy(),
+  uuidExtension: 'pgcrypto',
   synchronize: false, // never true, schema changes go through migrations
   installExtensions: false, // we use gen_random_uuid() (built in since PG13)
 };
