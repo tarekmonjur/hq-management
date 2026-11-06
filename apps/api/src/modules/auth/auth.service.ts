@@ -252,6 +252,7 @@ export class AuthService {
       role: user.role,
       sid: session.sessionId,
       outletId: user.outletId ?? null,
+      companyId: user.companyId ?? null,
       jti,
     };
 
@@ -336,6 +337,7 @@ export class AuthService {
         role: user.role,
         sid: session.sessionId,
         outletId: user.outletId ?? null,
+        companyId: user.companyId ?? null,
         jti,
       };
 

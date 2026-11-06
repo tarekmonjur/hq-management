@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module.js';
 import { OutletsModule } from './modules/outlets/outlets.module.js';
 import { OutletMenuItemsModule } from './modules/outlet-menu-items/outlet-menu-items.module.js';
+import { InventoriesModule } from './modules/inventories/inventories.module.js';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { OutletMenuItemsModule } from './modules/outlet-menu-items/outlet-menu-i
     MenuItemsModule,
     OutletsModule,
     OutletMenuItemsModule,
+    InventoriesModule,
   ],
   controllers: [],
   providers: [ConfigService, TypeOrmConfigService],

@@ -30,7 +30,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       typeof payload.sid !== 'string' ||
       typeof payload.jti !== 'string' ||
       !Object.values(UserRole).includes(payload.role) ||
-      (payload.outletId !== null && typeof payload.outletId !== 'string')
+      (payload.outletId !== null && typeof payload.outletId !== 'string') ||
+      (payload.companyId !== null && typeof payload.companyId !== 'string')
     ) {
       throw new UnauthorizedException('Invalid access token');
     }
