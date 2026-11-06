@@ -49,7 +49,7 @@ export class MenuItemsController {
   constructor(private readonly menuItemsService: MenuItemsService) {}
 
   @Post()
-  @Roles(UserRole.HQ_ADMIN)
+  @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a menu item' })
   @ApiCreatedResponse({ type: MenuItemApiResponseDto })
   @ApiBadRequestResponse({ type: ApiErrorResponseDto })
@@ -83,7 +83,7 @@ export class MenuItemsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.HQ_ADMIN)
+  @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update a menu item' })
   @ApiParam({ name: 'id', format: 'uuid' })
@@ -101,7 +101,7 @@ export class MenuItemsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.HQ_ADMIN)
+  @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a menu item' })
   @ApiParam({ name: 'id', format: 'uuid' })
