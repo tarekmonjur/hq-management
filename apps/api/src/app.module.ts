@@ -5,8 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { envValidationSchema } from './config/index.js';
 import { TypeOrmConfigService } from './database/service/database.service.js';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 
@@ -35,7 +33,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
     HealthModule,
     AuthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, ConfigService, TypeOrmConfigService],
+  controllers: [],
+  providers: [ConfigService, TypeOrmConfigService],
 })
 export class AppModule {}
