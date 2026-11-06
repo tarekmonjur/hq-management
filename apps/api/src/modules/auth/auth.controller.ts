@@ -164,11 +164,9 @@ export class AuthController {
   @ApiOkResponse({ type: ApiResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   async me(@CurrentUser() user: JwtPayload) {
+    const profile = await this.authService.getCurrentUser(user.sub);
     return {
-      id: user.sub,
-      email: user.email,
-      role: user.role,
-      outletId: user.outletId,
+      ...profile,
       sessionId: user.sid,
     };
   }

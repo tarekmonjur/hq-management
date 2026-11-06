@@ -499,6 +499,38 @@ describe('AuthService', () => {
     });
   });
 
+  describe('getCurrentUser', () => {
+    it('returns the profile including fullName', async () => {
+      userRepository.findOne.mockResolvedValue({
+        id: 'user-1',
+        email: 'admin@example.test',
+        fullName: 'Demo HQ Administrator',
+        role: UserRole.HQ_ADMIN,
+        outletId: null,
+        isActive: true,
+      });
+
+      await expect(service.getCurrentUser('user-1')).resolves.toEqual({
+        id: 'user-1',
+        email: 'admin@example.test',
+        fullName: 'Demo HQ Administrator',
+        role: UserRole.HQ_ADMIN,
+        outletId: null,
+      });
+    });
+
+    it('rejects a missing or inactive user', async () => {
+      userRepository.findOne.mockResolvedValue({
+        id: 'user-1',
+        isActive: false,
+      });
+
+      await expect(service.getCurrentUser('user-1')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+  });
+
   describe('validateSession', () => {
     it('returns session when active, not expired, and user is active', async () => {
       const session = {

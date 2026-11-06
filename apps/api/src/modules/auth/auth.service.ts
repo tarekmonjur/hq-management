@@ -374,6 +374,28 @@ export class AuthService {
     );
   }
 
+  async getCurrentUser(userId: string): Promise<{
+    id: string;
+    email: string;
+    fullName: string;
+    role: UserRole;
+    outletId: string | null;
+  }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      outletId: user.outletId ?? null,
+    };
+  }
+
   async listSessions(
     userId: string,
     currentSessionId: string,
