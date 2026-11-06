@@ -173,6 +173,7 @@ describe('AuthService', () => {
         passwordHash,
         role: UserRole.HQ_ADMIN,
         outletId: 'outlet-1',
+        companyId: 'company-1',
         isActive: true,
         failedLoginAttempts: 0,
         lockedUntil: null,
@@ -201,6 +202,9 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('sessionId', 'session-tx-1');
       expect(result).toHaveProperty('tokenType', 'Bearer');
       expect(result).toHaveProperty('expiresIn');
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 'company-1' }),
+      );
       expect(queryRunner.commitTransaction).toHaveBeenCalled();
     });
 
@@ -297,6 +301,7 @@ describe('AuthService', () => {
           email: 'admin@example.com',
           role: UserRole.HQ_ADMIN,
           outletId: null,
+          companyId: 'company-1',
           isActive: true,
         },
       };
@@ -319,6 +324,9 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('accessToken', 'signed-access-token');
       expect(result).toHaveProperty('refreshToken');
       expect(result.sessionId).toBe('session-1');
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 'company-1' }),
+      );
       expect(queryRunner.commitTransaction).toHaveBeenCalled();
     });
 

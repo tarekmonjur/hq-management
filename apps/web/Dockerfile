@@ -1,7 +1,17 @@
-FROM node:24-alpine AS builder
+FROM node:24-alpine AS base
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+
+FROM base AS dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM dependencies AS development
+ENV NODE_ENV=development
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+
+FROM dependencies AS builder
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL

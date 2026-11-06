@@ -20,6 +20,7 @@ services:
       - "3001:3001"
     volumes:
       - ./apps/api:/app
+      - /app/node_modules
     command: npm run start:dev 
     depends_on:
       hq-db:
@@ -55,12 +56,14 @@ services:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
-      target: builder
+      target: development
     container_name: hq-web
     restart: unless-stopped
     command: npm run dev
     volumes:
       - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
     ports:
       - "3000:3000"
     env_file:
