@@ -34,7 +34,7 @@ export class OutletsService {
       },
     });
 
-    if (!user?.isActive || user.role !== UserRole.HQ_ADMIN || !user.companyId) {
+    if (!user?.isActive || !user.companyId) {
       throw new ForbiddenException('Outlet access is not available');
     }
 

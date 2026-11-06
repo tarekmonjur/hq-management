@@ -29,7 +29,7 @@ import { OutletsService } from './outlets.service.js';
 @ApiTags('outlets')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.HQ_ADMIN)
+@Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
 @Controller('outlets')
 export class OutletsController {
   constructor(private readonly outletsService: OutletsService) {}
