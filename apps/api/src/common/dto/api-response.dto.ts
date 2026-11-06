@@ -6,8 +6,23 @@ export class ApiResponseMetadataDto {
 }
 
 export class ApiErrorBodyDto {
-  @ApiProperty({ example: 'Service Unavailable' })
-  message: string;
+  @ApiProperty({
+    oneOf: [
+      { type: 'string', example: 'Service Unavailable' },
+      {
+        type: 'object',
+        additionalProperties: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+        example: {
+          email: ['must be an email'],
+          password: ['must be longer than or equal to 12 characters'],
+        },
+      },
+    ],
+  })
+  message: string | Record<string, string[]>;
 
   @ApiPropertyOptional({ example: 503 })
   code?: number;

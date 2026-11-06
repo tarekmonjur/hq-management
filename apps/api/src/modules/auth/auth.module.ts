@@ -38,8 +38,8 @@ import { parseDurationToSeconds } from './utils/duration.util.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => [
         {
-          ttl: config.get<number>('THROTTLER_TTL', 60000),
-          limit: config.get<number>('THROTTLER_LIMIT', 60),
+          ttl: config.get<number>('THROTTLER_TTL', 60000), // 1 minute
+          limit: config.get<number>('THROTTLER_LIMIT', 60), // 60 requests
         },
       ],
     }),

@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { ExceptionFilter } from './common/filters/exception.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
+import { validationExceptionFactory } from './common/pipes/validation-exception.factory.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -32,6 +33,7 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 

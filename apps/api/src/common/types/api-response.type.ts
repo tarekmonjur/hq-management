@@ -1,8 +1,10 @@
 import { HttpStatus } from '@nestjs/common';
 import { IUnsafeObject } from './type.js';
 
+export type IApiErrorMessage = string | Record<string, string[]>;
+
 export interface IApiError {
-  message: string;
+  message: IApiErrorMessage;
   code?: number;
   extra?: IUnsafeObject | string | (IUnsafeObject | string)[];
 }

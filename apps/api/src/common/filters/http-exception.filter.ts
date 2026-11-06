@@ -8,7 +8,7 @@ export function HandleHttpException(exception: HttpException): IApiError {
   const message =
     typeof exceptionResp === 'string'
       ? exceptionResp
-      : (exceptionResp?.message as string);
+      : (exceptionResp?.message as IApiError['message']);
 
   const extra = exception?.cause as IUnsafeObject | string;
 

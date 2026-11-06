@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 
 import {
   ApiErrorMetadataDto,
@@ -39,9 +39,10 @@ export class HealthCheckDataDto {
   details: HealthIndicatorsDto;
 }
 
-export class HealthApiResponseDto extends ApiResponseDto<HealthCheckDataDto> {
+export class HealthApiResponseDto extends OmitType(ApiResponseDto<HealthCheckDataDto>, ['error'] as const) {
   @ApiProperty({ type: HealthCheckDataDto })
   declare data: HealthCheckDataDto;
+
 }
 
 export class HealthErrorMetadataDto extends ApiErrorMetadataDto {

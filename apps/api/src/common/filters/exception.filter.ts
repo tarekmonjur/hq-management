@@ -31,6 +31,10 @@ export class ExceptionFilter implements NestExceptionFilter {
       error = HandleHttpException(exception);
     }
 
+    const statusText = HttpStatus[status];
+    const fallbackMessage =
+      typeof error.message === 'string' ? error.message : 'Internal Server Error';
+
     const resp: IApiResponse = {
       metadata: {
         timestamp: new Date().toUTCString(),
@@ -39,7 +43,7 @@ export class ExceptionFilter implements NestExceptionFilter {
       statusCode: status,
       error,
       data: null,
-      message: (HttpStatus[status] || error?.message).replaceAll(/-|_/g, ' '),
+      message: (statusText || fallbackMessage).replaceAll(/-|_/g, ' '),
       success: false,
     };
 

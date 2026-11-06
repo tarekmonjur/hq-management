@@ -31,7 +31,7 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.ACCEPTED)
-  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 per hour
+  @Throttle({ default: { limit: 15, ttl: 3600000 } }) // 15 per hour
   async register(@Body() dto: RegisterDto): Promise<{ message: string }> {
     await this.authService.register(dto);
     return {
