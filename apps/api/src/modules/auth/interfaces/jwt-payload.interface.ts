@@ -6,4 +6,5 @@ export interface JwtPayload {
   role: UserRole;
   sid: string;
   outletId: string | null;
+  jti: string;
 }

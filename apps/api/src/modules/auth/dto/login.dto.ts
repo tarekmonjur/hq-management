@@ -29,14 +29,4 @@ export class LoginDto {
   @IsString()
   @MaxLength(50)
   deviceType?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  ipAddress?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(512)
-  userAgent?: string;
 }

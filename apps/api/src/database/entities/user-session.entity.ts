@@ -27,7 +27,7 @@ export class UserSession {
   @Column({ type: 'uuid', nullable: false })
   userId: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: false })
+  @Column({ type: 'varchar', length: 255, nullable: false, select: false })
   refreshTokenHash: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
@@ -56,6 +56,9 @@ export class UserSession {
 
   @Column({ name: 'expires_at', type: 'timestamp' })
   expiresAt: Date;
+
+  @Column({ name: 'absolute_expires_at', type: 'timestamp' })
+  absoluteExpiresAt: Date;
 
   @Column({ name: 'revoked_at', type: 'timestamp', nullable: true })
   revokedAt?: Date;

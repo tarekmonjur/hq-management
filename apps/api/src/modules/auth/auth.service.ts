@@ -1,18 +1,34 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Logger } from 'nestjs-pino';
-import { IsNull, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import type { Request } from 'express';
 
+import { UserRole } from '../../common/enums/user.enum.js';
 import { User, UserSession } from '../../database/entities/index.js';
 import { JwtPayload } from './interfaces/jwt-payload.interface.js';
+import { AuthTokenPair } from './interfaces/auth-token-pair.interface.js';
+import { SessionSummary } from './interfaces/session-summary.interface.js';
+import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
+import {
+  parseDurationToMs,
+  parseDurationToSeconds,
+} from './utils/duration.util.js';
+
+const DUMMY_BCRYPT_HASH =
+  '$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012';
 
 @Injectable()
 export class AuthService {
@@ -23,13 +39,59 @@ export class AuthService {
     private readonly userSessionRepository: Repository<UserSession>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
-  async login(
-    dto: LoginDto,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async register(dto: RegisterDto): Promise<void> {
     const normalizedEmail = dto.email.trim().toLowerCase();
+    const trimmedFullName = dto.fullName?.trim();
+
+    if (!trimmedFullName) {
+      throw new BadRequestException('Full name is required');
+    }
+
+    if (Buffer.byteLength(dto.password, 'utf8') > 72) {
+      throw new BadRequestException(
+        'Password exceeds maximum allowed byte length of 72 bytes',
+      );
+    }
+
+    // Hash password first so timing does not leak whether account exists
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      // Generic 202 response without modifying or disclosing the existing account
+      return;
+    }
+
+    try {
+      const user = this.userRepository.create({
+        email: normalizedEmail,
+        fullName: trimmedFullName,
+        mobileNo: dto.mobileNo?.trim() || null,
+        passwordHash,
+        role: UserRole.OUTLET_STAFF,
+        outletId: null,
+        isActive: true,
+      });
+
+      await this.userRepository.save(user);
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.message?.includes('duplicate key')) {
+        return;
+      }
+      throw err;
+    }
+  }
+
+  async login(dto: LoginDto, req: Request): Promise<AuthTokenPair> {
+    const normalizedEmail = dto.email.trim().toLowerCase();
+
     const user = await this.userRepository
       .createQueryBuilder('user')
       .addSelect('user.passwordHash')
@@ -37,15 +99,24 @@ export class AuthService {
       .getOne();
 
     if (!user) {
+      await bcrypt.compare(dto.password, DUMMY_BCRYPT_HASH);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      throw new UnauthorizedException('Account temporarily locked');
+      await bcrypt.compare(dto.password, DUMMY_BCRYPT_HASH);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is disabled');
+      await bcrypt.compare(dto.password, DUMMY_BCRYPT_HASH);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Reset stale lockout counter if prior lock expired
+    if (user.lockedUntil && user.lockedUntil <= new Date()) {
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -66,178 +137,325 @@ export class AuthService {
     }
 
     user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
     user.lastLoginAt = new Date();
-    await this.userRepository.save(user);
 
-    const rawRefreshToken = randomBytes(64).toString('hex');
+    const rawRefreshToken = randomBytes(32).toString('base64url');
     const refreshTokenHash = await bcrypt.hash(rawRefreshToken, 10);
-    const refreshExpiresAt = new Date(
-      Date.now() +
-        this.parseDurationToMs(
-          this.configService.getOrThrow<string>('JWT_REFRESH_EXPIRES_IN'),
-        ),
+
+    const refreshIdleMs = parseDurationToMs(
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+    );
+    const absoluteMs = parseDurationToMs(
+      this.configService.get<string>(
+        'JWT_SESSION_ABSOLUTE_EXPIRES_IN',
+        '30d',
+      ),
     );
 
-    const session = this.userSessionRepository.create({
-      userId: user.id,
-      user,
-      refreshTokenHash,
-      deviceId: dto.deviceId ?? null,
-      deviceName: dto.deviceName ?? null,
-      deviceType: dto.deviceType ?? null,
-      ipAddress: dto.ipAddress ?? null,
-      userAgent: dto.userAgent ?? null,
-      issuedAt: new Date(),
-      expiresAt: refreshExpiresAt,
-    });
-
-    await this.userSessionRepository.save(session);
-
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      sid: session.sessionId,
-      outletId: user.outletId ?? null,
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      refreshToken: rawRefreshToken,
-    };
-  }
-
-  async refresh(
-    dto: RefreshTokenDto,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const session = await this.userSessionRepository.findOne({
-      where: {
-        sessionId: dto.sessionId,
-        revokedAt: IsNull(),
-      },
-      relations: { user: true },
-    });
-
-    if (!session) {
-      throw new UnauthorizedException('Session not found or revoked');
-    }
-
-    if (session.expiresAt < new Date()) {
-      session.revokedAt = new Date();
-      await this.userSessionRepository.save(session);
-      throw new UnauthorizedException('Refresh token expired');
-    }
-
-    const isRefreshTokenValid = await bcrypt.compare(
-      dto.refreshToken,
-      session.refreshTokenHash,
-    );
-
-    if (!isRefreshTokenValid) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const user =
-      session.user ??
-      (await this.userRepository.findOne({ where: { id: session.userId } }));
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('Account is disabled');
-    }
-
-    const rawRefreshToken = randomBytes(64).toString('hex');
-    const refreshExpiration = this.configService.getOrThrow<string>(
-      'JWT_REFRESH_EXPIRES_IN',
-    );
+    const now = Date.now();
+    const absoluteExpiresAt = new Date(now + absoluteMs);
     const expiresAt = new Date(
-      Date.now() + this.parseDurationToMs(refreshExpiration),
+      Math.min(now + refreshIdleMs, absoluteExpiresAt.getTime()),
     );
 
-    session.refreshTokenHash = await bcrypt.hash(rawRefreshToken, 10);
-    session.expiresAt = expiresAt;
-    session.issuedAt = new Date();
-    await this.userSessionRepository.save(session);
+    const ipAddress = this.getClientIp(req);
+    const userAgent = this.getUserAgent(req);
 
+    let session: UserSession;
+
+    // Use transaction to revoke same device session and persist user + new session
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.save(User, user);
+
+      if (dto.deviceId) {
+        await queryRunner.manager.update(
+          UserSession,
+          {
+            userId: user.id,
+            deviceId: dto.deviceId,
+            revokedAt: IsNull(),
+          },
+          { revokedAt: new Date() },
+        );
+      }
+
+      session = queryRunner.manager.create(UserSession, {
+        userId: user.id,
+        refreshTokenHash,
+        deviceId: dto.deviceId ?? null,
+        deviceName: dto.deviceName ?? null,
+        deviceType: dto.deviceType ?? null,
+        ipAddress: ipAddress ?? null,
+        userAgent: userAgent ?? null,
+        issuedAt: new Date(),
+        expiresAt,
+        absoluteExpiresAt,
+      });
+
+      await queryRunner.manager.save(UserSession, session);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    const jti = randomUUID();
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       sid: session.sessionId,
       outletId: user.outletId ?? null,
+      jti,
     };
+
+    const expiresIn = parseDurationToSeconds(
+      this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
+    );
 
     return {
       accessToken: this.jwtService.sign(payload),
       refreshToken: rawRefreshToken,
+      sessionId: session.sessionId,
+      tokenType: 'Bearer',
+      expiresIn,
     };
   }
 
-  async logout(sessionId: string): Promise<void> {
-    const session = await this.userSessionRepository.findOne({
-      where: { sessionId },
-    });
+  async refresh(dto: RefreshTokenDto): Promise<AuthTokenPair> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (!session || session.revokedAt) {
-      return;
+    try {
+      const session = await queryRunner.manager
+        .createQueryBuilder(UserSession, 'session')
+        .setLock('pessimistic_write')
+        .addSelect('session.refreshTokenHash')
+        .leftJoinAndSelect('session.user', 'user')
+        .where('session.sessionId = :sessionId', { sessionId: dto.sessionId })
+        .getOne();
+
+      if (!session || session.revokedAt) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const now = new Date();
+      if (session.expiresAt <= now || session.absoluteExpiresAt <= now) {
+        session.revokedAt = now;
+        await queryRunner.manager.save(UserSession, session);
+        await queryRunner.commitTransaction();
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      const isRefreshTokenValid = await bcrypt.compare(
+        dto.refreshToken,
+        session.refreshTokenHash,
+      );
+
+      if (!isRefreshTokenValid) {
+        // Do not revoke session on token mismatch
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const user = session.user;
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('Account is disabled');
+      }
+
+      const newRawRefreshToken = randomBytes(32).toString('base64url');
+      const newHash = await bcrypt.hash(newRawRefreshToken, 10);
+
+      const refreshIdleMs = parseDurationToMs(
+        this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+      );
+      const newExpiresAt = new Date(
+        Math.min(
+          Date.now() + refreshIdleMs,
+          session.absoluteExpiresAt.getTime(),
+        ),
+      );
+
+      session.refreshTokenHash = newHash;
+      session.expiresAt = newExpiresAt;
+      session.issuedAt = new Date();
+
+      await queryRunner.manager.save(UserSession, session);
+      await queryRunner.commitTransaction();
+
+      const jti = randomUUID();
+      const payload: JwtPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        sid: session.sessionId,
+        outletId: user.outletId ?? null,
+        jti,
+      };
+
+      const expiresIn = parseDurationToSeconds(
+        this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
+      );
+
+      return {
+        accessToken: this.jwtService.sign(payload),
+        refreshToken: newRawRefreshToken,
+        sessionId: session.sessionId,
+        tokenType: 'Bearer',
+        expiresIn,
+      };
+    } catch (error) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
+  }
 
-    session.revokedAt = new Date();
-    await this.userSessionRepository.save(session);
+  async logout(userId: string, sessionId: string): Promise<void> {
+    await this.userSessionRepository.update(
+      { sessionId, userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
   async logoutAll(userId: string): Promise<void> {
-    await this.userSessionRepository
-      .createQueryBuilder()
-      .update(UserSession)
-      .set({ revokedAt: new Date() })
-      .where('user_id = :userId', { userId })
-      .andWhere('revoked_at IS NULL')
-      .execute();
+    await this.userSessionRepository.update(
+      { userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
-  async validateSession(sessionId: string): Promise<UserSession | null> {
-    const session = await this.userSessionRepository.findOne({
-      where: {
-        sessionId,
-        revokedAt: IsNull(),
-      },
+  async listSessions(
+    userId: string,
+    currentSessionId: string,
+  ): Promise<SessionSummary[]> {
+    const sessions = await this.userSessionRepository.find({
+      where: { userId },
+      order: { issuedAt: 'DESC' },
     });
 
-    if (!session) {
+    return sessions.map((s) => ({
+      sessionId: s.sessionId,
+      deviceId: s.deviceId,
+      deviceName: s.deviceName ?? null,
+      deviceType: s.deviceType ?? null,
+      os: s.os ?? null,
+      browser: s.browser ?? null,
+      ipAddress: s.ipAddress ?? null,
+      userAgent: s.userAgent ?? null,
+      issuedAt: s.issuedAt,
+      expiresAt: s.expiresAt,
+      absoluteExpiresAt: s.absoluteExpiresAt,
+      isCurrent: s.sessionId === currentSessionId,
+    }));
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    await this.userSessionRepository.update(
+      { sessionId, userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<void> {
+    if (Buffer.byteLength(dto.newPassword, 'utf8') > 72) {
+      throw new BadRequestException(
+        'New password exceeds maximum allowed byte length of 72 bytes',
+      );
+    }
+
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.id = :userId', { userId })
+      .getOne();
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isCurrentValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      dto.newPassword,
+      user.passwordHash,
+    );
+
+    if (isSamePassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const newHash = await bcrypt.hash(dto.newPassword, 12);
+    user.passwordHash = newHash;
+    user.passwordChangedAt = new Date();
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.save(User, user);
+      await queryRunner.manager.update(
+        UserSession,
+        { userId, revokedAt: IsNull() },
+        { revokedAt: new Date() },
+      );
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async validateSession(
+    sessionId: string,
+    userId: string,
+  ): Promise<UserSession | null> {
+    const session = await this.userSessionRepository.findOne({
+      where: { sessionId, revokedAt: IsNull() },
+      relations: { user: true },
+    });
+
+    if (!session || session.userId !== userId) {
       return null;
     }
 
-    if (session.expiresAt <= new Date()) {
-      session.revokedAt = new Date();
+    const now = new Date();
+    if (session.expiresAt <= now || session.absoluteExpiresAt <= now) {
+      session.revokedAt = now;
       await this.userSessionRepository.save(session);
+      return null;
+    }
+
+    if (!session.user || !session.user.isActive) {
       return null;
     }
 
     return session;
-  }
-
-  private parseDurationToMs(value: string): number {
-    const match = value.trim().match(/^(\d+)([smhd])$/i);
-
-    if (!match) {
-      return 7 * 24 * 60 * 60 * 1000;
-    }
-
-    const amount = Number(match[1]);
-    const unit = match[2].toLowerCase();
-
-    const durations = {
-      s: 1000,
-      m: 60 * 1000,
-      h: 60 * 60 * 1000,
-      d: 24 * 60 * 60 * 1000,
-    };
-
-    return amount * (durations[unit as keyof typeof durations] ?? 60 * 1000);
   }
 
   getClientIp(req: Request): string | null {
