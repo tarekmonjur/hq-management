@@ -25,7 +25,7 @@ async function runSeeds(): Promise<void> {
       await seedOutletMenuItems(manager, outlets, menuItems);
       await seedInventories(manager, outlets, menuItems);
       await seedOutletReceiptCounters(manager, outlets);
-      await seedUser(manager, outlets);
+      await seedUser(manager, outlets, company.id);
       await seedSales(manager);
       await seedSaleItems(manager);
     });

@@ -80,6 +80,7 @@ async function upsertSeedUser(
   manager: EntityManager,
   def: SeedUserDef,
   outlets: Outlet[],
+  companyId: string,
 ): Promise<User> {
   const repo = manager.getRepository(User);
   const outletId =
@@ -94,6 +95,7 @@ async function upsertSeedUser(
     existing.role = def.role;
     existing.isActive = true;
     existing.outletId = outletId;
+    existing.companyId = companyId;
     return repo.save(existing);
   }
 
@@ -107,6 +109,7 @@ async function upsertSeedUser(
       role: def.role,
       passwordHash,
       outletId,
+      companyId,
       isActive: true,
       failedLoginAttempts: 0,
       lastLoginAt: null,
@@ -133,8 +136,9 @@ async function upsertSeedUser(
 export async function seedUser(
   manager: EntityManager,
   outlets: Outlet[],
+  companyId: string,
 ): Promise<User[]> {
   return Promise.all(
-    SEED_USERS.map((def) => upsertSeedUser(manager, def, outlets)),
+    SEED_USERS.map((def) => upsertSeedUser(manager, def, outlets, companyId)),
   );
 }
