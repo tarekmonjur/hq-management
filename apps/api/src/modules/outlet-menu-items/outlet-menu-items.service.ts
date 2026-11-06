@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { UserRole } from '../../common/enums/user.enum.js';
 import { hasConstraint } from '../../common/utils/postgres-error.util.js';
 import {
   MenuItem,
@@ -75,17 +76,16 @@ export class OutletMenuItemsService {
   }
 
   async findAll(userId: string, query: ListOutletMenuItemsQueryDto) {
-    const companyId = await this.requireCompanyId(userId);
+    const access = await this.requireAccess(userId);
+    const outletId = this.scopedOutletId(access, query.outletId);
     const queryBuilder = this.outletMenuItemRepository
       .createQueryBuilder('assignment')
       .innerJoinAndSelect('assignment.menuItem', 'menuItem')
       .innerJoinAndSelect('assignment.outlet', 'outlet')
-      .where('outlet.companyId = :companyId', { companyId });
+      .where('outlet.companyId = :companyId', { companyId: access.companyId });
 
-    if (query.outletId) {
-      queryBuilder.andWhere('assignment.outletId = :outletId', {
-        outletId: query.outletId,
-      });
+    if (outletId) {
+      queryBuilder.andWhere('assignment.outletId = :outletId', { outletId });
     }
 
     if (query.isActive !== undefined) {
@@ -156,12 +156,21 @@ export class OutletMenuItemsService {
   }
 
   private async requireCompanyId(userId: string): Promise<string> {
+    return (await this.requireAccess(userId)).companyId;
+  }
+
+  private async requireAccess(userId: string): Promise<{
+    companyId: string;
+    role: UserRole;
+    outletId: string | null;
+  }> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       select: {
         id: true,
         role: true,
         companyId: true,
+        outletId: true,
         isActive: true,
       },
     });
@@ -170,7 +179,29 @@ export class OutletMenuItemsService {
       throw new ForbiddenException('Outlet menu access is not available');
     }
 
-    return user.companyId;
+    return {
+      companyId: user.companyId,
+      role: user.role,
+      outletId: user.outletId ?? null,
+    };
+  }
+
+  private scopedOutletId(
+    access: { role: UserRole; outletId: string | null },
+    requestedOutletId?: string,
+  ): string | undefined {
+    if (
+      access.role === UserRole.HQ_ADMIN ||
+      access.role === UserRole.SUPER_ADMIN
+    ) {
+      return requestedOutletId;
+    }
+
+    if (!access.outletId) {
+      throw new ForbiddenException('Outlet menu access is not available');
+    }
+
+    return access.outletId;
   }
 
   private async findCompanyOutlet(

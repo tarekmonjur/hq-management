@@ -222,6 +222,50 @@ describe('OutletMenuItemsService', () => {
     expect(queryBuilder.take).toHaveBeenCalledWith(5);
   });
 
+  it('limits an outlet user to their own outlet', async () => {
+    vi.mocked(userRepository.findOne).mockResolvedValue({
+      id: 'user-id',
+      role: UserRole.OUTLET_STAFF,
+      companyId: 'company-id',
+      outletId: 'staff-outlet',
+      isActive: true,
+    } as User);
+    queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+    await service.findAll('user-id', {
+      page: 1,
+      limit: 20,
+      outletId: 'other-outlet',
+    } as ListOutletMenuItemsQueryDto);
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'assignment.outletId = :outletId',
+      { outletId: 'staff-outlet' },
+    );
+    expect(queryBuilder.andWhere).not.toHaveBeenCalledWith(
+      'assignment.outletId = :outletId',
+      { outletId: 'other-outlet' },
+    );
+  });
+
+  it('denies an outlet user who is not assigned to an outlet', async () => {
+    vi.mocked(userRepository.findOne).mockResolvedValue({
+      id: 'user-id',
+      role: UserRole.OUTLET_MANAGER,
+      companyId: 'company-id',
+      outletId: null,
+      isActive: true,
+    } as User);
+
+    await expect(
+      service.findAll('user-id', {
+        page: 1,
+        limit: 20,
+      } as ListOutletMenuItemsQueryDto),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(outletMenuItemRepository.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
   it('updates the price of an existing assignment', async () => {
     const assignment = {
       id: 'assignment-id',

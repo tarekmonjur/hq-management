@@ -44,7 +44,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const protectedPath = ["/dashboard", "/outlets", "/menu-items"].some(
+  const protectedPath = ["/dashboard", "/outlets", "/menu-items", "/outlet-menu-items"].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   if (protectedPath && !signedIn) {

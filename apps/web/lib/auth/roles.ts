@@ -9,3 +9,7 @@ export function canViewOutlets(role: string | undefined) {
 export function canManageMenuItems(role: string | undefined) {
   return role === "HQ_ADMIN";
 }
+
+export function canManageOutletMenus(role: string | undefined) {
+  return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
+}

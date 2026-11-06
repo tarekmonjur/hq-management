@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, LogOut, Menu, Store, UtensilsCrossed, X } from "lucide-react";
+import { ClipboardList, LayoutDashboard, LogOut, Menu, Store, UtensilsCrossed, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -132,6 +132,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
   items.push({ href: "/menu-items", label: "Menu items", icon: UtensilsCrossed });
+  items.push({ href: "/outlet-menu-items", label: "Outlet menus", icon: ClipboardList });
   if (canViewOutlets(profile.data?.role)) {
     items.push({ href: "/outlets", label: "Outlets", icon: Store });
   }

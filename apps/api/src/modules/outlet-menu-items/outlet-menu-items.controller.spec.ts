@@ -59,11 +59,23 @@ describe('OutletMenuItemsController', () => {
     );
   });
 
-  it('requires an authenticated HQ or super admin', () => {
-    expect(Reflect.getMetadata(ROLES_KEY, OutletMenuItemsController)).toEqual([
-      UserRole.HQ_ADMIN,
-      UserRole.SUPER_ADMIN,
-    ]);
+  it('lets every signed-in role list and limits writes to HQ or super admin', () => {
+    const adminRoles = [UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN];
+    expect(
+      Reflect.getMetadata(ROLES_KEY, OutletMenuItemsController.prototype.findAll),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(ROLES_KEY, OutletMenuItemsController.prototype.create),
+    ).toEqual(adminRoles);
+    expect(
+      Reflect.getMetadata(
+        ROLES_KEY,
+        OutletMenuItemsController.prototype.updatePrice,
+      ),
+    ).toEqual(adminRoles);
+    expect(
+      Reflect.getMetadata(ROLES_KEY, OutletMenuItemsController.prototype.remove),
+    ).toEqual(adminRoles);
     expect(
       Reflect.getMetadata(GUARDS_METADATA, OutletMenuItemsController),
     ).toEqual([JwtAuthGuard, RolesGuard]);

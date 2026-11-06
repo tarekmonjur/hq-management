@@ -47,7 +47,6 @@ import { OutletMenuItemsService } from './outlet-menu-items.service.js';
 @ApiTags('outlet-menu-items')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
 @Controller('outlet-menu-items')
 export class OutletMenuItemsController {
   constructor(
@@ -55,6 +54,7 @@ export class OutletMenuItemsController {
   ) {}
 
   @Post()
+  @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Assign a master menu item to an outlet' })
   @ApiCreatedResponse({ type: OutletMenuItemApiResponseDto })
   @ApiBadRequestResponse({ type: ApiErrorResponseDto })
@@ -84,6 +84,7 @@ export class OutletMenuItemsController {
   }
 
   @Patch(':menuItemId')
+  @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update an outlet menu price' })
   @ApiParam({ name: 'menuItemId', format: 'uuid' })
@@ -101,6 +102,7 @@ export class OutletMenuItemsController {
   }
 
   @Delete(':menuItemId')
+  @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove an outlet menu assignment' })
   @ApiParam({ name: 'menuItemId', format: 'uuid' })
