@@ -9,6 +9,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module.js';
 import { OutletsModule } from './modules/outlets/outlets.module.js';
+import { OutletMenuItemsModule } from './modules/outlet-menu-items/outlet-menu-items.module.js';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { OutletsModule } from './modules/outlets/outlets.module.js';
     AuthModule,
     MenuItemsModule,
     OutletsModule,
+    OutletMenuItemsModule,
   ],
   controllers: [],
   providers: [ConfigService, TypeOrmConfigService],

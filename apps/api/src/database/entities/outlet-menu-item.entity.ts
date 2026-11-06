@@ -36,7 +36,7 @@ export class OutletMenuItem {
     nullable: true,
     transformer: numberTransformer,
   })
-  outletPrice: number;
+  outletPrice: number | null;
 
   @Column({ type: 'boolean', default: false, nullable: false })
   isActive: boolean;
