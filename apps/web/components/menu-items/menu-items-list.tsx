@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentUserRequest } from "@/lib/api/auth";
 import { ApiError, type FieldErrors } from "@/lib/api/client";
-import { listMenuItems, type MenuItem } from "@/lib/api/menu-items";
+import { deleteMenuItem, listMenuItems, type MenuItem } from "@/lib/api/menu-items";
 import { canManageMenuItems } from "@/lib/auth/roles";
 import { readMenuItemsQuery } from "@/lib/validations/menu-items";
 
@@ -161,7 +162,7 @@ export function MenuItemsList() {
       {menuItems.isFetching ? (
         <MenuItemsResultsSkeleton />
       ) : !parsed.success || menuItems.isError ? null : list && list.items.length > 0 ? (
-        <MenuItemResults items={list.items} />
+        <MenuItemResults items={list.items} canManage={Boolean(canManageMenuItems(profile.data?.role))} />
       ) : (
         <p className="text-sm text-zinc-500">No menu items found.</p>
       )}
@@ -189,7 +190,13 @@ export function MenuItemsList() {
   );
 }
 
-function MenuItemResults({ items }: { items: MenuItem[] }) {
+function MenuItemResults({
+  items,
+  canManage,
+}: {
+  items: MenuItem[];
+  canManage: boolean;
+}) {
   return (
     <>
       <div className="hidden overflow-hidden rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
@@ -199,6 +206,9 @@ function MenuItemResults({ items }: { items: MenuItem[] }) {
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Base price</th>
               <th className="px-4 py-3 font-medium">Unit</th>
+              {canManage ? (
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -211,6 +221,19 @@ function MenuItemResults({ items }: { items: MenuItem[] }) {
                 </td>
                 <td className="px-4 py-3">{formatPrice(item.basePrice)}</td>
                 <td className="px-4 py-3">{item.unit ?? "—"}</td>
+                {canManage ? (
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/menu-items/${item.id}`}
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 px-3 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800"
+                      >
+                        Edit
+                      </Link>
+                      <DeleteMenuItemAction item={item} />
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -218,19 +241,82 @@ function MenuItemResults({ items }: { items: MenuItem[] }) {
       </div>
       <ul className="flex flex-col gap-3 md:hidden">
         {items.map((item) => (
-          <li key={item.id}>
-            <Link
-              href={`/menu-items/${item.id}`}
-              className="block rounded-xl border border-zinc-200 bg-background p-4 dark:border-zinc-800"
-            >
-              <p className="font-medium">{item.name}</p>
+          <li
+            key={item.id}
+            className="rounded-xl border border-zinc-200 bg-background p-4 dark:border-zinc-800"
+          >
+            <div>
+              <Link href={`/menu-items/${item.id}`} className="font-medium hover:underline">
+                {item.name}
+              </Link>
               <p className="mt-1 text-sm text-zinc-500">{formatPrice(item.basePrice)}</p>
               <p className="mt-1 text-sm">{item.unit ?? "—"}</p>
-            </Link>
+            </div>
+            {canManage ? (
+              <div className="mt-3 flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                <Link
+                  href={`/menu-items/${item.id}`}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 px-3 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800"
+                >
+                  Edit
+                </Link>
+                <DeleteMenuItemAction item={item} />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>
     </>
+  );
+}
+
+function DeleteMenuItemAction({ item }: { item: MenuItem }) {
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+  const remove = useMutation({
+    mutationFn: () => deleteMenuItem(item.id),
+    onSuccess: async (response) => {
+      toast.success(response.message || "Menu item deleted");
+      await queryClient.invalidateQueries({ queryKey: ["menu-items"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Delete failed");
+    },
+  });
+
+  if (remove.isPending) {
+    return <Skeleton className="h-9 w-16" />;
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Button
+          type="button"
+          className="h-9 bg-red-600 px-2.5 text-xs text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+          onClick={() => remove.mutate()}
+        >
+          Confirm
+        </Button>
+        <Button
+          type="button"
+          className="h-9 bg-transparent px-2 text-xs text-foreground hover:bg-zinc-200/70 dark:hover:bg-zinc-800"
+          onClick={() => setConfirming(false)}
+        >
+          Cancel
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      type="button"
+      className="h-9 bg-transparent px-3 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
+      onClick={() => setConfirming(true)}
+    >
+      Delete
+    </Button>
   );
 }
 
