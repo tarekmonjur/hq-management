@@ -26,6 +26,11 @@ export function proxy(request: NextRequest) {
 
   const signedIn = hasSession(request);
 
+  if (pathname === "/dashboard/outlets" || pathname.startsWith("/dashboard/outlets/")) {
+    const nextPath = pathname.replace("/dashboard/outlets", "/outlets");
+    return NextResponse.redirect(new URL(`${nextPath}${request.nextUrl.search}`, request.url));
+  }
+
   if (pathname === "/") {
     return NextResponse.redirect(
       new URL(signedIn ? "/dashboard" : "/login", request.url),
@@ -39,10 +44,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    if (!signedIn) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+  const protectedPath = ["/dashboard", "/outlets", "/menu-items"].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  if (protectedPath && !signedIn) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
