@@ -24,7 +24,7 @@ async function bootstrap() {
     prefix: 'v',
   });
 
-  app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api-docs/(.*)'] });
+  app.setGlobalPrefix('api', { exclude: ['/api-docs/(.*)'] });
 
   app.useGlobalPipes(
     new ValidationPipe({
