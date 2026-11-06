@@ -8,6 +8,7 @@ import { TypeOrmConfigService } from './database/service/database.service.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module.js';
+import { OutletsModule } from './modules/outlets/outlets.module.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MenuItemsModule } from './modules/menu-items/menu-items.module.js';
     HealthModule,
     AuthModule,
     MenuItemsModule,
+    OutletsModule,
   ],
   controllers: [],
   providers: [ConfigService, TypeOrmConfigService],

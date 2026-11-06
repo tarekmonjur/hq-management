@@ -6,7 +6,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { Outlet } from './outlet.entity.js';
+import { User } from './user.entity.js';
 
 @Entity('companies')
 export class Company {
@@ -18,6 +20,9 @@ export class Company {
 
   @OneToMany(() => Outlet, (outlet) => outlet.company)
   outlets: Outlet[];
+
+  @OneToMany(() => User, (user) => user.company)
+  users: Relation<User[]>;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

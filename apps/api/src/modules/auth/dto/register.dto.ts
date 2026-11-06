@@ -31,12 +31,27 @@ export class RegisterDto {
   @ApiProperty({ example: UserRole.HQ_ADMIN, enum: UserRole })
   @IsOptional()
   @IsString()
-  @IsIn([UserRole.HQ_ADMIN, UserRole.OUTLET_MANAGER, UserRole.OUTLET_STAFF])
+  @IsIn([
+    UserRole.SUPER_ADMIN,
+    UserRole.HQ_ADMIN,
+    UserRole.OUTLET_MANAGER,
+    UserRole.OUTLET_STAFF,
+  ])
   role?: UserRole;
 
-  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    format: 'uuid',
+  })
   @IsOptional()
-  @IsString()
+  @IsUUID()
+  companyId?: string;
+
+  @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174001',
+    format: 'uuid',
+  })
+  @IsOptional()
   @IsUUID()
   outletId?: string;
 

@@ -12,6 +12,8 @@ import { ChangePasswordDto } from './dto/change-password.dto.js';
 describe('AuthService', () => {
   let userRepository: any;
   let userSessionRepository: any;
+  let outletRepository: any;
+  let companyRepository: any;
   let jwtService: any;
   let configService: any;
   let dataSource: any;
@@ -45,6 +47,14 @@ describe('AuthService', () => {
           })),
         })),
       })),
+    };
+
+    outletRepository = {
+      findOne: vi.fn(),
+    };
+
+    companyRepository = {
+      findOne: vi.fn(),
     };
 
     jwtService = {
@@ -92,6 +102,8 @@ describe('AuthService', () => {
     service = new AuthService(
       userRepository,
       userSessionRepository,
+      outletRepository,
+      companyRepository,
       jwtService,
       configService,
       dataSource,
@@ -118,6 +130,7 @@ describe('AuthService', () => {
         mobileNo: null,
         passwordHash: 'hashed-pwd',
         role: UserRole.OUTLET_STAFF,
+        companyId: null,
         outletId: null,
         isActive: true,
       });

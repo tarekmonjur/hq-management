@@ -12,12 +12,14 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
+import { Company } from './company.entity.js';
 import { Outlet } from './outlet.entity.js';
 import { UserRole } from '../../common/enums/user.enum.js';
 import { UserSession } from './user-session.entity.js';
 
 @Entity('users')
 @Unique('uq_users_email', ['email'])
+@Index('idx_users_company', ['companyId'])
 @Index('idx_users_outlet', ['outletId'])
 @Index('idx_users_failed_attempts', ['failedLoginAttempts'])
 @Check('chk_users_failed_attempts', '"failed_login_attempts" >= 0')
@@ -42,6 +44,9 @@ export class User {
   role: UserRole;
 
   @Column({ type: 'uuid', nullable: true })
+  companyId?: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
   outletId?: string | null;
 
   @Column({ type: 'boolean', default: true })
@@ -58,6 +63,16 @@ export class User {
 
   @Column({ type: 'timestamptz', nullable: true })
   lockedUntil: Date | null;
+
+  @ManyToOne(() => Company, (company) => company.users, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'company_id',
+    foreignKeyConstraintName: 'fk_users_company',
+  })
+  company?: Relation<Company> | null;
 
   @ManyToOne(() => Outlet, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({

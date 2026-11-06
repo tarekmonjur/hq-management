@@ -14,7 +14,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 import type { Request } from 'express';
 
 import { UserRole } from '../../common/enums/user.enum.js';
-import { User, UserSession, Outlet } from '../../database/entities/index.js';
+import { Company, User, UserSession, Outlet } from '../../database/entities/index.js';
 import { JwtPayload } from './interfaces/jwt-payload.interface.js';
 import { AuthTokenPair } from './interfaces/auth-token-pair.interface.js';
 import { SessionSummary } from './interfaces/session-summary.interface.js';
@@ -39,6 +39,8 @@ export class AuthService {
     private readonly userSessionRepository: Repository<UserSession>,
     @InjectRepository(Outlet)
     private readonly outletRepository: Repository<Outlet>,
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
@@ -70,8 +72,23 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
 
+    if (dto.role !== UserRole.SUPER_ADMIN && !dto.companyId) {
+      throw new BadRequestException('Company ID is required');
+    }
+
     if (dto.role !== UserRole.HQ_ADMIN && !dto.outletId) {
       throw new BadRequestException('Either role or outlet ID is required');
+    }
+
+    let companyId = dto.companyId ?? null;
+
+    if (companyId) {
+      const company = await this.companyRepository.findOne({
+        where: { id: companyId },
+      });
+      if (!company) {
+        throw new BadRequestException('Company not found');
+      }
     }
 
     if (dto.role !== UserRole.HQ_ADMIN) {
@@ -84,6 +101,10 @@ export class AuthService {
       if (!outlet) {
         throw new BadRequestException('Outlet not found');
       }
+      if (companyId && outlet.companyId !== companyId) {
+        throw new BadRequestException('Outlet does not belong to the company');
+      }
+      companyId = companyId ?? outlet.companyId;
     }
 
     try {
@@ -93,6 +114,7 @@ export class AuthService {
         mobileNo: dto.mobileNo?.trim() || null,
         passwordHash,
         role: dto.role || UserRole.OUTLET_STAFF,
+        companyId,
         outletId: dto.outletId || null,
         isActive: true,
       });

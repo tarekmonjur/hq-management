@@ -43,7 +43,7 @@ import { MenuItemsService } from './menu-items.service.js';
 
 @ApiTags('menu-items')
 @ApiBearerAuth()
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('menu-items')
 export class MenuItemsController {
   constructor(private readonly menuItemsService: MenuItemsService) {}
