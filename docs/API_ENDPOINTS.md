@@ -41,13 +41,18 @@
 - `GET /revenue?outletId=&from=&to=` : Revenue by outlet for a date range
 - `GET /top-items?outletId` : Top five items by outlet
 
-## Outlets API Endpoints
+## Inventory API Endpoints
 
-`Api Base Path: /outlets/:outletId`
+`Api Base Path: /inventories`
 
-- `GET /menu-items` : Return only assign items for that outlet.
-- `GET /inventory` : List current inventory stock for that outlet.
-- `PUT /inventory/:menuItemId` : Inventory stock adjustment
-- `POST /sales` : Create a sale (multiple line items). Handles stock check, receipt number generation, transaction.
-- `GET /sales` : Sales history
-- `GET /sales/:id`: Sales details
+- `GET /` : List inventory stock for all outlets if user role is admin else only for their outlet.
+- `PUT /:inventoryId` : Inventory stock adjustment for specific inventory.
+
+## Sales API Endpoints
+
+`Api Base Path: /sales`
+
+- `POST /` : Create a sale (multiple line items). Handles stock check, receipt number generation, transaction.
+- `GET /` : Sales history
+- `GET /:id`: Sales details
+

@@ -50,6 +50,7 @@ Proper indexing for frequently queried fields
 Dockerfile
 docker-compose
 Deployed instance
+
 Required Deliverables
 Deployed Instance for End User to Access
 GitHub Repository
@@ -64,6 +65,7 @@ Scaling strategy
 Architecture Documentation
 Provide a document including:
 ERD Diagram for Database schema and relationships
+
 Scaling Plan
 How will the system design evolve for 10 Outlets, totaling 100,000 transactions per month?
 Your answer should discuss:
