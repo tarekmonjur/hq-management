@@ -12,6 +12,7 @@ import { OutletsModule } from './modules/outlets/outlets.module.js';
 import { OutletMenuItemsModule } from './modules/outlet-menu-items/outlet-menu-items.module.js';
 import { InventoriesModule } from './modules/inventories/inventories.module.js';
 import { SalesModule } from './modules/sales/sales.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { SalesModule } from './modules/sales/sales.module.js';
     OutletMenuItemsModule,
     InventoriesModule,
     SalesModule,
+    ReportsModule,
   ],
   controllers: [],
   providers: [ConfigService, TypeOrmConfigService],

@@ -5,6 +5,7 @@ Single Company → Multiple Outlets → HQ assigns menu → Outlets create sales
 Time Expectation
 This assessment should take you 3-5 days to complete
 Estimated effort: 18 - 28 hours
+
 Required Implementation
 Master Menu + Outlet Assignment
 
@@ -35,6 +36,7 @@ Wrap in database transaction
 Basic Reporting Endpoint
 Total revenue by outlet
 Top 5 selling items per outlet
+
 Engineering Requirements
 Tech Stack: PostgreSQL, Express.js, Node.js, React.js
 Layered architecture

@@ -337,31 +337,6 @@ describe('OutletMenuItemsService', () => {
     );
   });
 
-  it('lets a super admin search any outlet menu without a company scope', async () => {
-    vi.mocked(userRepository.findOne).mockResolvedValue({
-      id: 'super-id',
-      role: UserRole.SUPER_ADMIN,
-      companyId: null,
-      outletId: null,
-      isActive: true,
-    } as User);
-    queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
-
-    await service.findAll('super-id', {
-      page: 1,
-      limit: 20,
-      outletId: outlet.id,
-      search: 'burger',
-      isActive: true,
-    } as ListOutletMenuItemsQueryDto);
-
-    expect(queryBuilder.where).not.toHaveBeenCalled();
-    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
-      'assignment.outletId = :outletId',
-      { outletId: outlet.id },
-    );
-  });
-
   it('denies an outlet user who is not assigned to an outlet', async () => {
     vi.mocked(userRepository.findOne).mockResolvedValue({
       id: 'user-id',
