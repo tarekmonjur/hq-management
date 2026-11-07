@@ -1,18 +1,18 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, LayoutDashboard, LogOut, Menu, Store, UtensilsCrossed, X } from "lucide-react";
+import { ClipboardList, LayoutDashboard, LogOut, Menu, Receipt, Store, UtensilsCrossed, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentUserRequest, logoutRequest } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { canViewOutlets } from "@/lib/auth/roles";
+import { canUseSales, canViewOutlets } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -21,8 +21,64 @@ type NavItem = {
   icon: LucideIcon;
 };
 
+function SidebarNav({
+  items,
+  onNavigate,
+}: {
+  items: NavItem[];
+  onNavigate: () => void;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <nav className="flex flex-1 flex-col gap-1 px-3">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const active =
+          item.href === "/dashboard"
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium",
+              active
+                ? "bg-foreground text-background"
+                : "text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-200 dark:hover:bg-zinc-800",
+            )}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SidebarNavFallback({ items }: { items: NavItem[] }) {
+  return (
+    <nav className="flex flex-1 flex-col gap-1 px-3" aria-hidden="true">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <div
+            key={item.href}
+            className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-zinc-700 dark:text-zinc-200"
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            {item.label}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
 function Sidebar({
-  pathname,
   onNavigate,
   profilePending,
   items,
@@ -31,7 +87,6 @@ function Sidebar({
   logoutPending,
   onLogout,
 }: {
-  pathname: string;
   onNavigate: () => void;
   profilePending: boolean;
   items: NavItem[];
@@ -45,31 +100,9 @@ function Sidebar({
       <div className="flex h-14 items-center px-4">
         <span className="text-sm font-semibold tracking-tight">HQ Management</span>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const active =
-            item.href === "/dashboard"
-              ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                "flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium",
-                active
-                  ? "bg-foreground text-background"
-                  : "text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-200 dark:hover:bg-zinc-800",
-              )}
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <Suspense fallback={<SidebarNavFallback items={items} />}>
+        <SidebarNav items={items} onNavigate={onNavigate} />
+      </Suspense>
       <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
         {profilePending ? (
           <div className="flex flex-col gap-2 px-2 py-2">
@@ -99,7 +132,6 @@ function Sidebar({
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,12 +165,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   ];
   items.push({ href: "/menu-items", label: "Menu items", icon: UtensilsCrossed });
   items.push({ href: "/outlet-menu-items", label: "Outlet menus", icon: ClipboardList });
+  if (profile.isPending || canUseSales(profile.data?.role)) {
+    items.push({ href: "/sales", label: "Sales", icon: Receipt });
+  }
   if (canViewOutlets(profile.data?.role)) {
     items.push({ href: "/outlets", label: "Outlets", icon: Store });
   }
 
   const sidebarProps = {
-    pathname,
     onNavigate: () => setMenuOpen(false),
     profilePending: profile.isPending,
     items,

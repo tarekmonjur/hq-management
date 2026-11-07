@@ -29,11 +29,15 @@ async function proxy(request: Request, context: RouteContext) {
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
   const accept = request.headers.get("accept");
+  const idempotencyKey = request.headers.get("idempotency-key");
   if (contentType) {
     headers.set("content-type", contentType);
   }
   if (accept) {
     headers.set("accept", accept);
+  }
+  if (idempotencyKey) {
+    headers.set("idempotency-key", idempotencyKey);
   }
 
   const method = request.method.toUpperCase();

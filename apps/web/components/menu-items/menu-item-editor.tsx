@@ -186,7 +186,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EditorSkeleton() {
+export function EditorSkeleton() {
   return (
     <div className="flex max-w-xl flex-col gap-4" aria-hidden="true">
       <Skeleton className="h-8 w-48" />

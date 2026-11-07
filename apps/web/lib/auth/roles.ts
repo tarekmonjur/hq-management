@@ -13,3 +13,13 @@ export function canManageMenuItems(role: string | undefined) {
 export function canManageOutletMenus(role: string | undefined) {
   return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
 }
+
+const SALES_ROLES = ["SUPER_ADMIN", "HQ_ADMIN", "OUTLET_MANAGER", "OUTLET_STAFF"] as const;
+
+export function canUseSales(role: string | undefined) {
+  return SALES_ROLES.some((allowed) => allowed === role);
+}
+
+export function canChooseSaleOutlet(role: string | undefined) {
+  return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
+}
