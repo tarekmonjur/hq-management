@@ -7,11 +7,21 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse as ApiBadRequestResponseDto,
+  ApiForbiddenResponse as ApiForbiddenResponseDto,
+  ApiNotFoundResponse as ApiNotFoundResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -42,15 +52,26 @@ export class ReportsController {
   @ApiOperation({
     summary: 'Get total revenue by outlet for an optional date range',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'Revenue report fetched successfully',
     type: RevenueReportApiResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Invalid date format' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Outlet not found' })
+  @ApiBadRequestResponse({
+    description: 'Invalid date format',
+    type: ApiBadRequestResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized',
+    type: ApiUnauthorizedResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden',
+    type: ApiForbiddenResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Outlet not found',
+    type: ApiNotFoundResponseDto,
+  })
   async getRevenueReport(
     @CurrentUser() user: JwtPayload,
     @Query() query: RevenueReportQueryDto,
@@ -74,15 +95,26 @@ export class ReportsController {
   @ApiOperation({
     summary: 'Get top selling items per outlet or across scoped outlets',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'Top selling items report fetched successfully',
     type: TopItemsReportApiResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Invalid query parameters' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Outlet not found' })
+  @ApiBadRequestResponse({
+    description: 'Invalid query parameters',
+    type: ApiBadRequestResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized',
+    type: ApiUnauthorizedResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden',
+    type: ApiForbiddenResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Outlet not found',
+    type: ApiNotFoundResponseDto,
+  })
   async getTopItemsReport(
     @CurrentUser() user: JwtPayload,
     @Query() query: TopItemsReportQueryDto,

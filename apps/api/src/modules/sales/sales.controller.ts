@@ -27,7 +27,12 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 
-import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import {
+  ApiBadRequestResponse as ApiBadRequestResponseDto,
+  ApiForbiddenResponse as ApiForbiddenResponseDto,
+  ApiNotFoundResponse as ApiNotFoundResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { UserRole } from '../../common/enums/user.enum.js';
@@ -75,10 +80,10 @@ export class SalesController {
     type: SaleApiResponseDto,
     description: 'The sale already existed for this idempotency key',
   })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
   async create(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateSaleDto,
@@ -103,10 +108,10 @@ export class SalesController {
       'SUPER_ADMIN sees every company. HQ_ADMIN sees outlets in their company. OUTLET_MANAGER and OUTLET_STAFF see only their outlet. Supports search, filters, and pagination.',
   })
   @ApiOkResponse({ type: SaleListApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
   findAll(@CurrentUser() user: JwtPayload, @Query() query: ListSalesQueryDto) {
     return this.salesService.findAll(user.sub, query);
   }
@@ -121,10 +126,10 @@ export class SalesController {
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: SaleApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
   findOne(
     @CurrentUser() user: JwtPayload,
     @Param('id', ParseUUIDPipe) id: string,

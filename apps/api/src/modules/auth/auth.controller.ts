@@ -26,7 +26,11 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 
-import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import {
+  ApiBadRequestResponse as ApiBadRequestResponseDto,
+  ApiTooManyRequestsResponse as ApiTooManyRequestsResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { ApiResponseDto } from '../../common/dto/api-response.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { JwtPayload } from './interfaces/jwt-payload.interface.js';
@@ -49,8 +53,8 @@ export class AuthController {
   @Throttle({ default: { limit: 15, ttl: 3600000 } }) // 15 per hour
   @ApiOperation({ summary: 'Register an account' })
   @ApiAcceptedResponse({ type: ApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiTooManyRequestsResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiTooManyRequestsResponse({ type: ApiTooManyRequestsResponseDto })
   async register(@Body() dto: RegisterDto): Promise<{ data: null, message: string }> {
     await this.authService.register(dto);
     return {
@@ -64,9 +68,9 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 per 15m
   @ApiOperation({ summary: 'Log in' })
   @ApiCreatedResponse({ type: ApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiTooManyRequestsResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiTooManyRequestsResponse({ type: ApiTooManyRequestsResponseDto })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -79,9 +83,9 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 per min
   @ApiOperation({ summary: 'Refresh an access token' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiTooManyRequestsResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiTooManyRequestsResponse({ type: ApiTooManyRequestsResponseDto })
   async refresh(@Body() dto: RefreshTokenDto): Promise<AuthTokenPair> {
     return this.authService.refresh(dto);
   }
@@ -92,7 +96,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Log out the current session' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   async logout(@CurrentUser() user: JwtPayload): Promise<{ message: string }> {
     await this.authService.logout(user.sub, user.sid);
     return { message: 'Logged out successfully' };
@@ -104,7 +108,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Log out every active session' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   async logoutAll(@CurrentUser() user: JwtPayload): Promise<{ message: string }> {
     await this.authService.logoutAll(user.sub);
     return { message: 'All active sessions revoked successfully' };
@@ -116,7 +120,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List active sessions' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   async listSessions(
     @CurrentUser() user: JwtPayload,
   ): Promise<SessionSummary[]> {
@@ -130,8 +134,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoke a session' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   async revokeSession(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe()) sessionId: string,
@@ -146,8 +150,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change the current password' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   async changePassword(
     @CurrentUser() user: JwtPayload,
     @Body() dto: ChangePasswordDto,
@@ -162,7 +166,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get the current user' })
   @ApiOkResponse({ type: ApiResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   async me(@CurrentUser() user: JwtPayload) {
     const profile = await this.authService.getCurrentUser(user.sub);
     return {

@@ -22,7 +22,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import {
+  ApiBadRequestResponse as ApiBadRequestResponseDto,
+  ApiForbiddenResponse as ApiForbiddenResponseDto,
+  ApiNotFoundResponse as ApiNotFoundResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { UserRole } from '../../common/enums/user.enum.js';
@@ -58,9 +63,9 @@ export class InventoriesController {
       'HQ_ADMIN / SUPER_ADMIN see inventory across all outlets of their company. OUTLET_MANAGER / OUTLET_STAFF see only their own outlet inventory.',
   })
   @ApiOkResponse({ type: InventoryListApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListInventoriesQueryDto,
@@ -78,10 +83,10 @@ export class InventoriesController {
   })
   @ApiParam({ name: 'inventoryId', format: 'uuid' })
   @ApiOkResponse({ type: InventoryApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
   adjustStock(
     @CurrentUser() user: JwtPayload,
     @Param('inventoryId', ParseUUIDPipe) inventoryId: string,

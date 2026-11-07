@@ -15,7 +15,10 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import {
+  ApiForbiddenResponse as ApiForbiddenResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { UserRole } from '../../common/enums/user.enum.js';
@@ -42,8 +45,8 @@ export class OutletsController {
       'HQ_ADMIN sees outlets in their company. SUPER_ADMIN sees every outlet.',
   })
   @ApiOkResponse({ type: OutletListApiResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListOutletsQueryDto,

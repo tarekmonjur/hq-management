@@ -26,7 +26,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import {
+  ApiBadRequestResponse as ApiBadRequestResponseDto,
+  ApiConflictResponse as ApiConflictResponseDto,
+  ApiForbiddenResponse as ApiForbiddenResponseDto,
+  ApiNotFoundResponse as ApiNotFoundResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { UserRole } from '../../common/enums/user.enum.js';
@@ -57,11 +63,11 @@ export class OutletMenuItemsController {
   @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Assign a master menu item to an outlet' })
   @ApiCreatedResponse({ type: OutletMenuItemApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
-  @ApiConflictResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
+  @ApiConflictResponse({ type: ApiConflictResponseDto })
   create(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateOutletMenuItemDto,
@@ -73,9 +79,9 @@ export class OutletMenuItemsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List outlet menu assignments' })
   @ApiOkResponse({ type: OutletMenuItemListApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListOutletMenuItemsQueryDto,
@@ -89,10 +95,10 @@ export class OutletMenuItemsController {
   @ApiOperation({ summary: 'Update an outlet menu price' })
   @ApiParam({ name: 'menuItemId', format: 'uuid' })
   @ApiOkResponse({ type: OutletMenuItemApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
   updatePrice(
     @CurrentUser() user: JwtPayload,
     @Param('menuItemId', ParseUUIDPipe) menuItemId: string,
@@ -107,10 +113,10 @@ export class OutletMenuItemsController {
   @ApiOperation({ summary: 'Remove an outlet menu assignment' })
   @ApiParam({ name: 'menuItemId', format: 'uuid' })
   @ApiOkResponse({ type: OutletMenuItemDeleteApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
   remove(
     @CurrentUser() user: JwtPayload,
     @Param('menuItemId', ParseUUIDPipe) menuItemId: string,

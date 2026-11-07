@@ -26,7 +26,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto.js';
+import {
+  ApiBadRequestResponse as ApiBadRequestResponseDto,
+  ApiConflictResponse as ApiConflictResponseDto,
+  ApiForbiddenResponse as ApiForbiddenResponseDto,
+  ApiNotFoundResponse as ApiNotFoundResponseDto,
+  ApiUnauthorizedResponse as ApiUnauthorizedResponseDto,
+} from '../../common/dto/api-error-response.dto.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { UserRole } from '../../common/enums/user.enum.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -52,10 +58,10 @@ export class MenuItemsController {
   @Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a menu item' })
   @ApiCreatedResponse({ type: MenuItemApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiConflictResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiConflictResponse({ type: ApiConflictResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
   create(@Body() dto: CreateMenuItemDto) {
     return this.menuItemsService.create(dto);
   }
@@ -64,8 +70,8 @@ export class MenuItemsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List menu items' })
   @ApiOkResponse({ type: MenuItemListApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   findAll(@Query() query: ListMenuItemsQueryDto) {
     return this.menuItemsService.findAll(query);
   }
@@ -75,9 +81,9 @@ export class MenuItemsController {
   @ApiOperation({ summary: 'Get a menu item by ID' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: MenuItemApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.menuItemsService.findOne(id);
   }
@@ -88,11 +94,11 @@ export class MenuItemsController {
   @ApiOperation({ summary: 'Update a menu item' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: MenuItemApiResponseDto })
-  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
-  @ApiConflictResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiBadRequestResponseDto })
+  @ApiConflictResponse({ type: ApiConflictResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMenuItemDto,
@@ -106,10 +112,10 @@ export class MenuItemsController {
   @ApiOperation({ summary: 'Delete a menu item' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: MenuItemDeleteApiResponseDto })
-  @ApiConflictResponse({ type: ApiErrorResponseDto })
-  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiConflictResponse({ type: ApiConflictResponseDto })
+  @ApiNotFoundResponse({ type: ApiNotFoundResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiUnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ApiForbiddenResponseDto })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.menuItemsService.remove(id);
   }

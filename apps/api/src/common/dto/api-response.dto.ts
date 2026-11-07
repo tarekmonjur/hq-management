@@ -5,32 +5,6 @@ export class ApiResponseMetadataDto {
   timestamp: string;
 }
 
-export class ApiErrorBodyDto {
-  @ApiProperty({
-    oneOf: [
-      { type: 'string', example: 'Service Unavailable' },
-      {
-        type: 'object',
-        additionalProperties: {
-          type: 'array',
-          items: { type: 'string' },
-        },
-        example: {
-          email: ['must be an email'],
-          password: ['must be longer than or equal to 12 characters'],
-        },
-      },
-    ],
-  })
-  message: string | Record<string, string[]>;
-
-  @ApiPropertyOptional({ example: 503 })
-  code?: number;
-
-  @ApiPropertyOptional({ nullable: true, type: Object })
-  extra?: unknown;
-}
-
 export class ApiResponseDto<T = unknown> {
   @ApiProperty({ type: ApiResponseMetadataDto })
   metadata: ApiResponseMetadataDto;
@@ -47,6 +21,10 @@ export class ApiResponseDto<T = unknown> {
   @ApiProperty({ example: 'Request Success' })
   message: string;
 
-  @ApiPropertyOptional({ type: ApiErrorBodyDto })
-  error?: ApiErrorBodyDto;
+  @ApiPropertyOptional({
+    nullable: true,
+    example: null,
+    type: Object,
+  })
+  error?: null;
 }
