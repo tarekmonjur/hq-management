@@ -45,7 +45,10 @@ describe('ReportsController', () => {
       service.getRevenueReport.mockResolvedValue(mockResult);
 
       const query: RevenueReportQueryDto = { outletId: 'outlet-1' };
-      const response = await controller.getRevenueReport('user-1', query);
+      const response = await controller.getRevenueReport(
+        { sub: 'user-1' } as never,
+        query,
+      );
 
       expect(service.getRevenueReport).toHaveBeenCalledWith('user-1', query);
       expect(response).toEqual({
@@ -84,7 +87,10 @@ describe('ReportsController', () => {
       service.getTopItemsReport.mockResolvedValue(mockResult);
 
       const query: TopItemsReportQueryDto = { limit: 5 };
-      const response = await controller.getTopItemsReport('user-1', query);
+      const response = await controller.getTopItemsReport(
+        { sub: 'user-1' } as never,
+        query,
+      );
 
       expect(service.getTopItemsReport).toHaveBeenCalledWith('user-1', query);
       expect(response).toEqual({

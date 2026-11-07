@@ -23,3 +23,13 @@ export function canUseSales(role: string | undefined) {
 export function canChooseSaleOutlet(role: string | undefined) {
   return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
 }
+
+const REPORT_ROLES = ["SUPER_ADMIN", "HQ_ADMIN", "OUTLET_MANAGER", "OUTLET_STAFF"] as const;
+
+export function canViewReports(role: string | undefined) {
+  return REPORT_ROLES.some((allowed) => allowed === role);
+}
+
+export function canFilterReportOutlets(role: string | undefined) {
+  return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
+}

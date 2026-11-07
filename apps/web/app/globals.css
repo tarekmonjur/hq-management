@@ -24,3 +24,35 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  body:has(.sale-receipt) * {
+    visibility: hidden;
+  }
+
+  body:has(.sale-receipt) .sale-receipt,
+  body:has(.sale-receipt) .sale-receipt * {
+    visibility: visible;
+  }
+
+  body:has(.sale-receipt) .sale-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: 0;
+  }
+
+  .print-report table {
+    border-collapse: collapse;
+  }
+
+  .print-report tr {
+    break-inside: avoid;
+  }
+
+  .print-report th,
+  .print-report td {
+    border: 1px solid #d4d4d8;
+  }
+}

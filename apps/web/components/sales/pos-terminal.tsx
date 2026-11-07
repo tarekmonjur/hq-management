@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
+import { PrintReceiptButton, SaleReceipt } from "@/components/sales/sale-receipt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import { listOutletMenuItems, type OutletMenuItem } from "@/lib/api/outlet-menu-
 import { listOutlets } from "@/lib/api/outlets";
 import { createSale, formatMoney, type Sale } from "@/lib/api/sales";
 import { canChooseSaleOutlet, canUseSales } from "@/lib/auth/roles";
+import { cn } from "@/lib/utils";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "@/lib/validations/sales";
 
 type TicketLine = {
@@ -32,6 +34,8 @@ export function PosTerminal() {
   const [outletId, setOutletId] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [dismissedQuery, setDismissedQuery] = useState("");
+  const [highlightState, setHighlightState] = useState({ key: "", index: -1 });
   const [lines, setLines] = useState<TicketLine[]>([]);
   const [tableNo, setTableNo] = useState("");
   const [orderStatus, setOrderStatus] = useState<(typeof ORDER_STATUSES)[number]>("SERVED");
@@ -59,6 +63,7 @@ export function PosTerminal() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
+  const trimmedSearch = search.trim();
   const menu = useQuery({
     queryKey: ["outlet-menu-items", "pos", activeOutletId, debouncedSearch],
     queryFn: () =>
@@ -71,6 +76,13 @@ export function PosTerminal() {
       }),
     enabled: Boolean(activeOutletId) && debouncedSearch.length > 0,
   });
+
+  const queryReady = debouncedSearch.length > 0 && debouncedSearch === trimmedSearch;
+  const matches = queryReady ? (menu.data?.items ?? []) : [];
+  const matchKey = matches.map((item) => item.id).join("|");
+  const highlight = highlightState.key === matchKey ? highlightState.index : -1;
+  const showList =
+    Boolean(activeOutletId) && trimmedSearch.length > 0 && dismissedQuery !== trimmedSearch;
 
   const charge = useMutation({
     mutationFn: () =>
@@ -98,6 +110,7 @@ export function PosTerminal() {
       setIdempotencyKey(crypto.randomUUID());
       toast.success(`Receipt ${sale.receiptNo} created`);
       void queryClient.invalidateQueries({ queryKey: ["sales"] });
+      document.getElementById("pos-search")?.focus();
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Could not create the sale");
@@ -107,8 +120,17 @@ export function PosTerminal() {
   function chooseOutlet(nextOutletId: string) {
     setOutletId(nextOutletId);
     setLines([]);
+    setSearch("");
     setIdempotencyKey(crypto.randomUUID());
     setLastSale(null);
+  }
+
+  function setHighlight(index: number) {
+    setHighlightState({ key: matchKey, index });
+    const item = matches[index];
+    if (item) {
+      document.getElementById(`pos-item-${item.id}`)?.scrollIntoView({ block: "nearest" });
+    }
   }
 
   function addItem(item: OutletMenuItem) {
@@ -132,17 +154,48 @@ export function PosTerminal() {
       ];
     });
     setSearch("");
+    setDismissedQuery("");
+    document.getElementById("pos-search")?.focus();
   }
 
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const matches = menu.data?.items ?? [];
+  function addFromSearch() {
+    const selected = highlight >= 0 ? matches[highlight] : undefined;
+    if (selected) {
+      addItem(selected);
+      return;
+    }
+
     const exact = matches.filter(
-      (item) => item.menuItemName.toLowerCase() === search.trim().toLowerCase(),
+      (item) => item.menuItemName.toLowerCase() === trimmedSearch.toLowerCase(),
     );
     const match = exact.length === 1 ? exact[0] : undefined;
     if (match) {
       addItem(match);
+    }
+  }
+
+  function onSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setDismissedQuery(trimmedSearch);
+      setHighlightState({ key: matchKey, index: -1 });
+      return;
+    }
+
+    if (event.key === "ArrowDown" && showList && matches.length > 0) {
+      event.preventDefault();
+      setHighlight(highlight < 0 ? 0 : Math.min(matches.length - 1, highlight + 1));
+      return;
+    }
+
+    if (event.key === "ArrowUp" && showList && matches.length > 0) {
+      event.preventDefault();
+      setHighlight(highlight <= 0 ? 0 : highlight - 1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addFromSearch();
     }
   }
 
@@ -173,6 +226,7 @@ export function PosTerminal() {
   const knownTotal = lines.every((line) => line.outletPrice !== null && line.outletPrice !== "")
     ? lines.reduce((sum, line) => sum + Number(line.outletPrice) * line.quantity, 0)
     : null;
+  const activeOptionId = highlight >= 0 ? `pos-item-${matches[highlight]?.id ?? ""}` : undefined;
 
   return (
     <section className="flex flex-col gap-6">
@@ -180,7 +234,7 @@ export function PosTerminal() {
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Point of sale</h1>
           <p className="text-sm text-zinc-500">
-            Search an assigned item by name, then add it to the ticket.
+            Search by name, then use the arrow keys and Enter to add an item.
           </p>
         </div>
         <Link
@@ -192,12 +246,15 @@ export function PosTerminal() {
       </div>
 
       {lastSale ? (
-        <p className="rounded-lg border border-zinc-200 bg-background px-4 py-3 text-sm dark:border-zinc-800">
-          Receipt {lastSale.receiptNo} · {formatMoney(lastSale.total)}{" "}
-          <Link className="font-medium underline" href={`/sales/${lastSale.id}`}>
-            View sale
-          </Link>
-        </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link className="text-sm font-medium underline" href={`/sales/${lastSale.id}`}>
+              View sale
+            </Link>
+            <PrintReceiptButton />
+          </div>
+          <SaleReceipt sale={lastSale} />
+        </div>
       ) : null}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
@@ -224,55 +281,87 @@ export function PosTerminal() {
             </div>
           ) : null}
 
-          <form className="flex flex-col gap-2" onSubmit={submitSearch}>
+          <div className="relative flex flex-col gap-2">
             <Label htmlFor="pos-search">Item name</Label>
             <Input
               id="pos-search"
+              role="combobox"
+              aria-expanded={showList}
+              aria-controls="pos-item-list"
+              aria-activedescendant={showList ? activeOptionId : undefined}
+              aria-autocomplete="list"
               autoFocus
+              autoComplete="off"
               value={search}
-              placeholder={activeOutletId ? "Type a name and press Enter" : "Select an outlet first"}
+              placeholder={
+                activeOutletId ? "Type a name, then press Enter" : "Select an outlet first"
+              }
               disabled={!activeOutletId}
               onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={onSearchKeyDown}
             />
-          </form>
+            {showList ? (
+              <ul
+                id="pos-item-list"
+                role="listbox"
+                className="absolute top-full z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-zinc-200 bg-background shadow-lg dark:border-zinc-800"
+              >
+                {!queryReady || menu.isFetching ? (
+                  <li className="px-4 py-3 text-sm text-zinc-500">Searching…</li>
+                ) : menuError ? (
+                  <li className="px-4 py-3 text-sm text-red-600 dark:text-red-400">{menuError}</li>
+                ) : matches.length === 0 ? (
+                  <li className="px-4 py-3 text-sm text-zinc-500">No active items match that name.</li>
+                ) : (
+                  matches.map((item, index) => (
+                    <li
+                      key={item.id}
+                      id={`pos-item-${item.id}`}
+                      role="option"
+                      aria-selected={index === highlight}
+                    >
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex min-h-12 w-full items-center justify-between gap-4 px-4 py-2 text-left",
+                          index === highlight
+                            ? "bg-foreground text-background"
+                            : "hover:bg-zinc-100 dark:hover:bg-zinc-900",
+                        )}
+                        onMouseEnter={() => setHighlight(index)}
+                        onClick={() => addItem(item)}
+                      >
+                        <span className="font-medium">{item.menuItemName}</span>
+                        <span className="text-sm">Price: {formatMoney(item.outletPrice)}</span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            ) : null}
+          </div>
 
-          {!activeOutletId ? (
-            <p className="text-sm text-zinc-500">Choose an outlet to look up items.</p>
-          ) : menu.isFetching ? (
-            <PosSkeleton />
-          ) : menuError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{menuError}</p>
-          ) : debouncedSearch && menu.data?.items.length === 0 ? (
-            <p className="text-sm text-zinc-500">No active items match that name.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {menu.data?.items.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className="flex min-h-16 w-full items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-background px-4 py-3 text-left hover:border-foreground dark:border-zinc-800"
-                    onClick={() => addItem(item)}
-                  >
-                    <span className="font-medium">{item.menuItemName}</span>
-                    <span className="text-sm text-zinc-500">{formatMoney(item.outletPrice)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <aside className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-background p-4 lg:sticky lg:top-6 dark:border-zinc-800">
-          <h2 className="text-lg font-semibold">Ticket</h2>
           {lines.length === 0 ? (
-            <p className="text-sm text-zinc-500">No items yet.</p>
+            <p className="text-sm text-zinc-500">Added items will appear here.</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {lines.map((line) => (
-                <li key={line.menuItemId} className="flex flex-col gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="font-medium">{line.name}</p>
-                    <p className="text-sm text-zinc-500">{formatMoney(line.outletPrice)}</p>
+                <li
+                  key={line.menuItemId}
+                  className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-background p-3 dark:border-zinc-800"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="min-w-0 font-medium">
+                      {line.name}{" "}
+                      <span className="text-sm font-normal text-zinc-500">
+                        Price: {formatMoney(line.outletPrice)}
+                      </span>
+                    </p>
+                    <p className="shrink-0 text-sm font-medium">
+                      {line.outletPrice === null || line.outletPrice === ""
+                        ? "—"
+                        : formatMoney(Number(line.outletPrice) * line.quantity)}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -321,7 +410,10 @@ export function PosTerminal() {
               ))}
             </ul>
           )}
+        </div>
 
+        <aside className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-background p-4 lg:sticky lg:top-6 dark:border-zinc-800">
+          <h2 className="text-lg font-semibold">Ticket</h2>
           <div className="grid gap-3">
             <div className="flex flex-col gap-2">
               <Label htmlFor="table-no">Table</Label>

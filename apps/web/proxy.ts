@@ -50,6 +50,7 @@ export function proxy(request: NextRequest) {
     "/menu-items",
     "/outlet-menu-items",
     "/sales",
+    "/reports",
   ].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );

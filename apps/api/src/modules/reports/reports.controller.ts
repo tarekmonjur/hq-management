@@ -13,6 +13,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -51,10 +52,10 @@ export class ReportsController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Outlet not found' })
   async getRevenueReport(
-    @CurrentUser('userId') userId: string,
+    @CurrentUser() user: JwtPayload,
     @Query() query: RevenueReportQueryDto,
   ) {
-    const data = await this.reportsService.getRevenueReport(userId, query);
+    const data = await this.reportsService.getRevenueReport(user.sub, query);
     return {
       statusCode: HttpStatus.OK,
       message: 'Revenue report fetched successfully',
@@ -83,10 +84,10 @@ export class ReportsController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Outlet not found' })
   async getTopItemsReport(
-    @CurrentUser('userId') userId: string,
+    @CurrentUser() user: JwtPayload,
     @Query() query: TopItemsReportQueryDto,
   ) {
-    const data = await this.reportsService.getTopItemsReport(userId, query);
+    const data = await this.reportsService.getTopItemsReport(user.sub, query);
     return {
       statusCode: HttpStatus.OK,
       message: 'Top selling items report fetched successfully',
