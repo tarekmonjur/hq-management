@@ -112,14 +112,21 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('creates an active OUTLET_STAFF user with null outletId', async () => {
+    it('creates an active OUTLET_STAFF user assigned to its company and outlet', async () => {
       userRepository.findOne.mockResolvedValue(null);
+      companyRepository.findOne.mockResolvedValue({ id: 'company-1' });
+      outletRepository.findOne.mockResolvedValue({
+        id: 'outlet-1',
+        companyId: 'company-1',
+      });
       vi.spyOn(bcrypt, 'hash').mockResolvedValue('hashed-pwd' as never);
 
       const dto: RegisterDto = {
         email: '  NewUser@example.com  ',
         password: 'Password@123456',
         fullName: '  New User  ',
+        companyId: 'company-1',
+        outletId: 'outlet-1',
       };
 
       await service.register(dto);
@@ -130,8 +137,8 @@ describe('AuthService', () => {
         mobileNo: null,
         passwordHash: 'hashed-pwd',
         role: UserRole.OUTLET_STAFF,
-        companyId: null,
-        outletId: null,
+        companyId: 'company-1',
+        outletId: 'outlet-1',
         isActive: true,
       });
       expect(userRepository.save).toHaveBeenCalled();
@@ -147,7 +154,7 @@ describe('AuthService', () => {
         fullName: 'Existing User',
       };
 
-      await service.register(dto);
+      await expect(service.register(dto)).resolves.toBeUndefined();
 
       expect(userRepository.save).not.toHaveBeenCalled();
     });
@@ -309,7 +316,7 @@ describe('AuthService', () => {
       queryRunner.manager.createQueryBuilder.mockReturnValue({
         setLock: vi.fn().mockReturnThis(),
         addSelect: vi.fn().mockReturnThis(),
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
+        innerJoinAndSelect: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         getOne: vi.fn().mockResolvedValue(session),
       });
@@ -344,7 +351,7 @@ describe('AuthService', () => {
       queryRunner.manager.createQueryBuilder.mockReturnValue({
         setLock: vi.fn().mockReturnThis(),
         addSelect: vi.fn().mockReturnThis(),
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
+        innerJoinAndSelect: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         getOne: vi.fn().mockResolvedValue(session),
       });
@@ -374,7 +381,7 @@ describe('AuthService', () => {
       queryRunner.manager.createQueryBuilder.mockReturnValue({
         setLock: vi.fn().mockReturnThis(),
         addSelect: vi.fn().mockReturnThis(),
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
+        innerJoinAndSelect: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         getOne: vi.fn().mockResolvedValue(session),
       });

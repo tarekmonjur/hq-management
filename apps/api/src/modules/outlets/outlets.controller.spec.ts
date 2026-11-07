@@ -28,9 +28,10 @@ describe('OutletsController', () => {
     expect(service.findCompanyOutlets).toHaveBeenCalledWith('user-id', query);
   });
 
-  it('requires the HQ_ADMIN role for the endpoint', () => {
+  it('requires the HQ_ADMIN or SUPER_ADMIN role for the endpoint', () => {
     expect(Reflect.getMetadata(ROLES_KEY, OutletsController)).toEqual([
       UserRole.HQ_ADMIN,
+      UserRole.SUPER_ADMIN,
     ]);
     expect(Reflect.getMetadata(GUARDS_METADATA, OutletsController)).toEqual([
       JwtAuthGuard,

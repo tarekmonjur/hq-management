@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { Logger } from 'nestjs-pino';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import type { Request } from 'express';
@@ -69,7 +69,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('User already exists');
+      return;
     }
 
     if (dto.role !== UserRole.SUPER_ADMIN && !dto.companyId) {
