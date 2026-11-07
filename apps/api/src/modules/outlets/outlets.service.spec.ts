@@ -138,6 +138,24 @@ describe('OutletsService', () => {
     expect(queryBuilder.take).toHaveBeenCalledWith(5);
   });
 
+  it('lists every outlet for a super admin, including one without a company', async () => {
+    vi.mocked(userRepository.findOne).mockResolvedValue({
+      id: 'super-id',
+      role: UserRole.SUPER_ADMIN,
+      companyId: null,
+      isActive: true,
+    } as User);
+    queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+    await service.findCompanyOutlets('super-id', {
+      page: 1,
+      limit: 20,
+    } as ListOutletsQueryDto);
+
+    expect(queryBuilder.where).not.toHaveBeenCalled();
+    expect(outletRepository.createQueryBuilder).toHaveBeenCalledWith('outlet');
+  });
+
   it.each([
     {
       reason: 'missing user',

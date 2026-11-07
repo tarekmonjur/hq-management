@@ -37,9 +37,9 @@ export class OutletsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'List company outlets',
+    summary: 'List outlets',
     description:
-      'Returns outlets belonging to the authenticated HQ admin’s company. The company scope is derived from the user record.',
+      'HQ_ADMIN sees outlets in their company. SUPER_ADMIN sees every outlet.',
   })
   @ApiOkResponse({ type: OutletListApiResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })

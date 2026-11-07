@@ -17,7 +17,7 @@ async function bootstrap() {
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: 'Content-Type, Authorization, Idempotency-Key',
   });
 
   app.enableVersioning({
@@ -41,11 +41,11 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
-  .setTitle('HQ Platform API')
-  .setDescription('HQ Platform API')
-  .setVersion('1.0')
-  .addBearerAuth()
-  .build();
+    .setTitle('HQ Platform API')
+    .setDescription('HQ Platform API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api-docs', app, document, {

@@ -34,13 +34,20 @@ export class OutletsService {
       },
     });
 
-    if (!user?.isActive || !user.companyId) {
+    if (
+      !user?.isActive ||
+      (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.HQ_ADMIN) ||
+      (user.role === UserRole.HQ_ADMIN && !user.companyId)
+    ) {
       throw new ForbiddenException('Outlet access is not available');
     }
 
-    const queryBuilder = this.outletRepository
-      .createQueryBuilder('outlet')
-      .where('outlet.companyId = :companyId', { companyId: user.companyId });
+    const queryBuilder = this.outletRepository.createQueryBuilder('outlet');
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      queryBuilder.where('outlet.companyId = :companyId', {
+        companyId: user.companyId,
+      });
+    }
 
     this.applyFilters(queryBuilder, query);
 
