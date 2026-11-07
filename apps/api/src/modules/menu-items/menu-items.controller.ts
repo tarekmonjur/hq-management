@@ -50,6 +50,7 @@ import { MenuItemsService } from './menu-items.service.js';
 @ApiTags('menu-items')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.HQ_ADMIN, UserRole.SUPER_ADMIN)
 @Controller('menu-items')
 export class MenuItemsController {
   constructor(private readonly menuItemsService: MenuItemsService) {}

@@ -34,10 +34,12 @@ export function MenuItemsList() {
     search: searchParams.get("search"),
   });
 
+  const canManage = canManageMenuItems(profile.data?.role);
+
   const menuItems = useQuery({
     queryKey: ["menu-items", "list", parsed.success ? parsed.data : null],
     queryFn: () => listMenuItems(parsed.success ? parsed.data : { page: 1, limit: 20 }),
-    enabled: parsed.success,
+    enabled: profile.isSuccess && canManage && parsed.success,
   });
 
   useEffect(() => {
@@ -106,6 +108,19 @@ export function MenuItemsList() {
   const total = list?.total ?? 0;
   const from = total === 0 ? 0 : (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
+
+  if (profile.isPending) {
+    return <MenuItemsResultsSkeleton />;
+  }
+
+  if (!canManage) {
+    return (
+      <section className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Menu items</h1>
+        <p className="text-sm text-zinc-500">You do not have access to master menu items.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-6">

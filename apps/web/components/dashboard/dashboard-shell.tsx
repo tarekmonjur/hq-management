@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentUserRequest, logoutRequest } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { canUseSales, canViewOutlets, canViewReports } from "@/lib/auth/roles";
+import { canManageMenuItems, canUseSales, canViewOutlets, canViewReports } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -163,7 +163,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const items: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
-  items.push({ href: "/menu-items", label: "Menu items", icon: UtensilsCrossed });
+  if (profile.isPending || canManageMenuItems(profile.data?.role)) {
+    items.push({ href: "/menu-items", label: "Menu items", icon: UtensilsCrossed });
+  }
   items.push({ href: "/outlet-menu-items", label: "Outlet menus", icon: ClipboardList });
   if (profile.isPending || canUseSales(profile.data?.role)) {
     items.push({ href: "/sales", label: "Sales", icon: Receipt });

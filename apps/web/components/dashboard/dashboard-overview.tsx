@@ -12,7 +12,7 @@ import {
   type TopSellingItem,
 } from "@/lib/api/reports";
 import { formatMoney } from "@/lib/api/sales";
-import { canViewReports } from "@/lib/auth/roles";
+import { canFilterReportOutlets, canViewReports } from "@/lib/auth/roles";
 
 const monthQuery = currentMonthQuery();
 
@@ -22,15 +22,22 @@ export function DashboardOverview() {
     queryFn: currentUserRequest,
   });
   const allowed = canViewReports(profile.data?.role);
+  const canFilterOutlets = canFilterReportOutlets(profile.data?.role);
+  const isOutletScoped = !canFilterOutlets && !!profile.data?.outletId;
+
+  const queryParams = {
+    ...monthQuery,
+    outletId: isOutletScoped ? (profile.data?.outletId ?? undefined) : undefined,
+  };
 
   const revenue = useQuery({
-    queryKey: ["reports", "revenue", "dashboard", monthQuery],
-    queryFn: () => getRevenueReport(monthQuery),
+    queryKey: ["reports", "revenue", "dashboard", queryParams],
+    queryFn: () => getRevenueReport(queryParams),
     enabled: allowed,
   });
   const topItems = useQuery({
-    queryKey: ["reports", "top-items", "dashboard", monthQuery],
-    queryFn: () => getTopItemsReport({ ...monthQuery, limit: 5 }),
+    queryKey: ["reports", "top-items", "dashboard", queryParams],
+    queryFn: () => getTopItemsReport({ ...queryParams, limit: 5 }),
     enabled: allowed,
   });
 
@@ -55,7 +62,11 @@ export function DashboardOverview() {
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-zinc-500">This month, for the outlets you can access.</p>
+        <p className="text-sm text-zinc-500">
+          {isOutletScoped
+            ? "This month, for your assigned outlet."
+            : "This month, for the outlets you can access."}
+        </p>
       </div>
 
       {revenue.error ? (

@@ -53,23 +53,10 @@ describe('MenuItemsController', () => {
     expect(service.remove).toHaveBeenCalledWith('item-id');
   });
 
-  it('restricts mutations to HQ and super admins', () => {
-    const prototype = MenuItemsController.prototype;
-    const handler = (name: keyof MenuItemsController) =>
-      Object.getOwnPropertyDescriptor(prototype, name)?.value;
-
-    expect(Reflect.getMetadata(ROLES_KEY, handler('create'))).toEqual([
+  it('restricts the entire controller to HQ and super admins', () => {
+    expect(Reflect.getMetadata(ROLES_KEY, MenuItemsController)).toEqual([
       UserRole.HQ_ADMIN,
       UserRole.SUPER_ADMIN,
     ]);
-    expect(Reflect.getMetadata(ROLES_KEY, handler('update'))).toEqual([
-      UserRole.HQ_ADMIN,
-      UserRole.SUPER_ADMIN,
-    ]);
-    expect(Reflect.getMetadata(ROLES_KEY, handler('remove'))).toEqual([
-      UserRole.HQ_ADMIN,
-      UserRole.SUPER_ADMIN,
-    ]);
-    expect(Reflect.getMetadata(ROLES_KEY, handler('findAll'))).toBeUndefined();
   });
 });
