@@ -9,8 +9,10 @@ export const metadata: Metadata = {
 
 export default function SalesPage() {
   return (
-    <Suspense fallback={<SalesResultsSkeleton />}>
-      <SalesList />
-    </Suspense>
+    <div className="listing-route flex min-h-0 flex-1 flex-col">
+      <Suspense fallback={<SalesResultsSkeleton />}>
+        <SalesList />
+      </Suspense>
+    </div>
   );
 }

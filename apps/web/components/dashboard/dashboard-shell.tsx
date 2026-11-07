@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, FileText, LayoutDashboard, LogOut, Menu, Receipt, Store, UtensilsCrossed, X } from "lucide-react";
+import { ClipboardList, FileText, LayoutDashboard, LogOut, Menu, Receipt, Store, UtensilsCrossed, Warehouse, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentUserRequest, logoutRequest } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { canManageMenuItems, canUseSales, canViewOutlets, canViewReports } from "@/lib/auth/roles";
+import { canManageMenuItems, canUseSales, canViewInventory, canViewOutlets, canViewReports } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -170,6 +170,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   if (profile.isPending || canUseSales(profile.data?.role)) {
     items.push({ href: "/sales", label: "Sales", icon: Receipt });
   }
+  if (profile.isPending || canViewInventory(profile.data?.role)) {
+    items.push({ href: "/inventory", label: "Inventory", icon: Warehouse });
+  }
   if (profile.isPending || canViewReports(profile.data?.role)) {
     items.push({ href: "/reports", label: "Reports", icon: FileText });
   }
@@ -188,8 +191,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-full flex-1 bg-zinc-50 dark:bg-zinc-950">
-      <aside className="hidden w-64 shrink-0 border-r border-zinc-200 bg-background md:block print:hidden dark:border-zinc-800">
+    <div className="dashboard-shell flex h-dvh w-full min-h-0 flex-none overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+      <aside className="hidden h-full min-h-0 w-64 shrink-0 border-r border-zinc-200 bg-background md:block print:hidden dark:border-zinc-800">
         <Sidebar {...sidebarProps} />
       </aside>
 
@@ -207,8 +210,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-3 border-b border-zinc-200 bg-background px-4 md:hidden print:hidden dark:border-zinc-800">
+      <div className="dashboard-content flex h-full min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-200 bg-background px-4 md:hidden print:hidden dark:border-zinc-800">
           <button
             type="button"
             className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900"
@@ -219,7 +222,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </button>
           <span className="text-sm font-semibold">HQ Management</span>
         </header>
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="dashboard-main flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

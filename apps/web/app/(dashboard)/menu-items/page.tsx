@@ -12,8 +12,10 @@ export const metadata: Metadata = {
 
 export default function MenuItemsPage() {
   return (
-    <Suspense fallback={<MenuItemsResultsSkeleton />}>
-      <MenuItemsList />
-    </Suspense>
+    <div className="listing-route flex min-h-0 flex-1 flex-col">
+      <Suspense fallback={<MenuItemsResultsSkeleton />}>
+        <MenuItemsList />
+      </Suspense>
+    </div>
   );
 }

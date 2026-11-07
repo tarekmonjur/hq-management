@@ -136,7 +136,7 @@ export function OutletMenuAssignments() {
   const to = Math.min(page * limit, total);
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="listing-page flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Outlet menus</h1>
@@ -154,7 +154,10 @@ export function OutletMenuAssignments() {
         ) : null}
       </div>
 
-      <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={applyFilters}>
+      <form
+        className="grid grid-cols-2 items-end gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4"
+        onSubmit={applyFilters}
+      >
         <TextFilter
           id="search"
           label="Search"
@@ -185,7 +188,7 @@ export function OutletMenuAssignments() {
             <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.isActive[0]}</p>
           ) : null}
         </div>
-        <div className="flex items-end">
+        <div>
           {assignments.isFetching ? (
             <Skeleton className="h-11 w-full" />
           ) : (
@@ -198,15 +201,17 @@ export function OutletMenuAssignments() {
 
       {pageError ? <p className="text-sm text-red-600 dark:text-red-400">{pageError}</p> : null}
 
-      {assignments.isFetching || profile.isPending ? (
-        <ResultsSkeleton />
-      ) : !parsed.success || assignments.isError ? null : list && list.items.length > 0 ? (
-        <AssignmentResults items={list.items} canManage={canManage} />
-      ) : (
-        <p className="text-sm text-zinc-500">No outlet menu items found.</p>
-      )}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {assignments.isFetching || profile.isPending ? (
+          <ResultsSkeleton />
+        ) : !parsed.success || assignments.isError ? null : list && list.items.length > 0 ? (
+          <AssignmentResults items={list.items} canManage={canManage} />
+        ) : (
+          <p className="text-sm text-zinc-500">No outlet menu items found.</p>
+        )}
+      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-zinc-500">
           {total === 0 ? "0 assignments" : `${from}–${to} of ${total}`}
         </p>
@@ -235,9 +240,9 @@ function AssignmentResults({
 }) {
   return (
     <>
-      <div className="hidden overflow-hidden rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
+      <div className="hidden h-full min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
+          <thead className="sticky top-0 z-10 bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-4 py-3 font-medium">Outlet</th>
               <th className="px-4 py-3 font-medium">Menu item</th>
@@ -265,7 +270,7 @@ function AssignmentResults({
           </tbody>
         </table>
       </div>
-      <ul className="flex flex-col gap-3 md:hidden">
+      <ul className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain md:hidden">
         {items.map((item) => (
           <li
             key={item.id}
@@ -328,29 +333,32 @@ function PriceEditor({ item }: { item: OutletMenuItem }) {
 
   return (
     <form
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-1.5"
       onSubmit={handleSubmit((values) => {
         setFormError(null);
         save.mutate(Number(values.outletPrice));
       })}
     >
-      <Input
-        aria-label={`Price for ${item.menuItemName}`}
-        inputMode="decimal"
-        aria-invalid={Boolean(isSubmitted && errors.outletPrice)}
-        {...register("outletPrice")}
-      />
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label={`Price for ${item.menuItemName}`}
+          inputMode="decimal"
+          className="w-28"
+          aria-invalid={Boolean(isSubmitted && errors.outletPrice)}
+          {...register("outletPrice")}
+        />
+        {save.isPending ? (
+          <Skeleton className="h-11 w-16 shrink-0" />
+        ) : (
+          <Button type="submit" className="shrink-0 px-3">
+            Save
+          </Button>
+        )}
+      </div>
       {isSubmitted && errors.outletPrice?.message ? (
-        <p className="text-sm text-red-600 dark:text-red-400">{errors.outletPrice.message}</p>
+        <p className="text-xs text-red-600 dark:text-red-400">{errors.outletPrice.message}</p>
       ) : null}
-      {formError ? <p className="text-sm text-red-600 dark:text-red-400">{formError}</p> : null}
-      {save.isPending ? (
-        <Skeleton className="h-11 w-24" />
-      ) : (
-        <Button type="submit" className="w-24">
-          Save
-        </Button>
-      )}
+      {formError ? <p className="text-xs text-red-600 dark:text-red-400">{formError}</p> : null}
     </form>
   );
 }
@@ -398,21 +406,14 @@ function DeleteAssignment({ item }: { item: OutletMenuItem }) {
 }
 
 function OutletFilter({ selectedId, error }: { selectedId: string; error?: string }) {
-  const [search, setSearch] = useState("");
   const outlets = useQuery({
-    queryKey: ["outlets", "filter", search],
-    queryFn: () => listOutlets({ page: 1, limit: 20, search: search.trim() || undefined }),
+    queryKey: ["outlets", "filter-all"],
+    queryFn: () => listOutlets({ page: 1, limit: 100 }),
   });
 
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor="outlet-filter-search">Outlet</Label>
-      <Input
-        id="outlet-filter-search"
-        value={search}
-        placeholder="Search outlets"
-        onChange={(event) => setSearch(event.target.value)}
-      />
+      <Label htmlFor="outletId">Outlet</Label>
       <select
         id="outletId"
         name="outletId"

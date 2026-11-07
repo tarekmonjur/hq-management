@@ -123,7 +123,7 @@ export function MenuItemsList() {
   }
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="listing-page flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Menu items</h1>
@@ -139,7 +139,7 @@ export function MenuItemsList() {
         ) : null}
       </div>
 
-      <form className="grid gap-4 sm:grid-cols-[1fr_auto]" onSubmit={applySearch}>
+      <form className="grid grid-cols-[1fr_auto] items-end gap-3 sm:gap-4" onSubmit={applySearch}>
         <div className="flex flex-col gap-2">
           <Label htmlFor="search">Search</Label>
           <Input
@@ -174,15 +174,17 @@ export function MenuItemsList() {
 
       {pageError ? <p className="text-sm text-red-600 dark:text-red-400">{pageError}</p> : null}
 
-      {menuItems.isFetching ? (
-        <MenuItemsResultsSkeleton />
-      ) : !parsed.success || menuItems.isError ? null : list && list.items.length > 0 ? (
-        <MenuItemResults items={list.items} canManage={Boolean(canManageMenuItems(profile.data?.role))} />
-      ) : (
-        <p className="text-sm text-zinc-500">No menu items found.</p>
-      )}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {menuItems.isFetching ? (
+          <MenuItemsResultsSkeleton />
+        ) : !parsed.success || menuItems.isError ? null : list && list.items.length > 0 ? (
+          <MenuItemResults items={list.items} canManage={Boolean(canManageMenuItems(profile.data?.role))} />
+        ) : (
+          <p className="text-sm text-zinc-500">No menu items found.</p>
+        )}
+      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-zinc-500">
           {total === 0 ? "0 menu items" : `${from}–${to} of ${total}`}
         </p>
@@ -214,9 +216,9 @@ function MenuItemResults({
 }) {
   return (
     <>
-      <div className="hidden overflow-hidden rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
+      <div className="hidden h-full min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
+          <thead className="sticky top-0 z-10 bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Base price</th>
@@ -254,7 +256,7 @@ function MenuItemResults({
           </tbody>
         </table>
       </div>
-      <ul className="flex flex-col gap-3 md:hidden">
+      <ul className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain md:hidden">
         {items.map((item) => (
           <li
             key={item.id}

@@ -6,6 +6,21 @@ export function canViewOutlets(role: string | undefined) {
   return OUTLET_ROLES.some((allowed) => allowed === role);
 }
 
+const INVENTORY_ROLES = [
+  "HQ_ADMIN",
+  "SUPER_ADMIN",
+  "OUTLET_MANAGER",
+  "OUTLET_STAFF",
+] as const;
+
+export function canViewInventory(role: string | undefined) {
+  return INVENTORY_ROLES.some((allowed) => allowed === role);
+}
+
+export function canAdjustInventory(role: string | undefined) {
+  return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
+}
+
 export function canManageMenuItems(role: string | undefined) {
   return role === "HQ_ADMIN" || role === "SUPER_ADMIN";
 }

@@ -163,7 +163,7 @@ export function SalesList() {
   const to = Math.min(page * limit, total);
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="listing-page flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Sales</h1>
@@ -181,7 +181,7 @@ export function SalesList() {
         </Link>
       </div>
 
-      <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={applyFilters}>
+      <form className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" onSubmit={applyFilters}>
         <FilterField
           id="search"
           label="Search"
@@ -262,15 +262,17 @@ export function SalesList() {
 
       {pageError ? <p className="text-sm text-red-600 dark:text-red-400">{pageError}</p> : null}
 
-      {sales.isFetching ? (
-        <SalesResultsSkeleton />
-      ) : !parsed.success || sales.isError ? null : list && list.items.length > 0 ? (
-        <SaleResults items={list.items} />
-      ) : (
-        <p className="text-sm text-zinc-500">No sales found.</p>
-      )}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {sales.isFetching ? (
+          <SalesResultsSkeleton />
+        ) : !parsed.success || sales.isError ? null : list && list.items.length > 0 ? (
+          <SaleResults items={list.items} onSaleClick={(id) => router.push(`/sales/${id}`)} />
+        ) : (
+          <p className="text-sm text-zinc-500">No sales found.</p>
+        )}
+      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-zinc-500">
           {total === 0 ? "0 sales" : `${from}–${to} of ${total}`}
         </p>
@@ -373,12 +375,18 @@ function SelectField({
   );
 }
 
-function SaleResults({ items }: { items: Sale[] }) {
+function SaleResults({
+  items,
+  onSaleClick,
+}: {
+  items: Sale[];
+  onSaleClick: (saleId: string) => void;
+}) {
   return (
     <>
-      <div className="hidden overflow-hidden rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
+      <div className="hidden h-full min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-zinc-200 md:block dark:border-zinc-800">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
+          <thead className="sticky top-0 z-10 bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-4 py-3 font-medium">Receipt</th>
               <th className="px-4 py-3 font-medium">Outlet</th>
@@ -391,11 +399,22 @@ function SaleResults({ items }: { items: Sale[] }) {
           </thead>
           <tbody>
             {items.map((sale) => (
-              <tr key={sale.id} className="border-t border-zinc-200 dark:border-zinc-800">
+              <tr
+                key={sale.id}
+                role="link"
+                tabIndex={0}
+                aria-label={`View details for receipt ${sale.receiptNo}`}
+                className="cursor-pointer border-t border-zinc-200 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-foreground dark:border-zinc-800 dark:hover:bg-zinc-900"
+                onClick={() => onSaleClick(sale.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    onSaleClick(sale.id);
+                  }
+                }}
+              >
                 <td className="px-4 py-3 font-medium">
-                  <Link href={`/sales/${sale.id}`} className="hover:underline">
-                    {sale.receiptNo}
-                  </Link>
+                  <span className="hover:underline">{sale.receiptNo}</span>
                 </td>
                 <td className="px-4 py-3">
                   {sale.outletName}
@@ -412,7 +431,7 @@ function SaleResults({ items }: { items: Sale[] }) {
         </table>
       </div>
 
-      <ul className="flex flex-col gap-3 md:hidden">
+      <ul className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain md:hidden">
         {items.map((sale) => (
           <li key={sale.id}>
             <Link

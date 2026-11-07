@@ -45,8 +45,9 @@ export function SaleDetail({ id }: { id: string }) {
   }
 
   return (
-    <section className="flex max-w-3xl flex-col gap-6">
+    <section className="sale-detail flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Sale details</h1>
         <Link href="/sales" className="text-sm font-medium text-zinc-500 hover:text-foreground">
           Back to sales
         </Link>

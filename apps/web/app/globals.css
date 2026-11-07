@@ -40,7 +40,22 @@ body {
     left: 0;
     top: 0;
     width: 100%;
+    max-width: none;
     border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  body:has(.sale-receipt) .sale-receipt table {
+    border-collapse: collapse;
+  }
+
+  body:has(.sale-receipt) .sale-receipt tr {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 12mm;
   }
 
   .print-report table {
