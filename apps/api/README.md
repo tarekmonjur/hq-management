@@ -1,93 +1,159 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# HQ Management API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+The API is a NestJS REST application using the Express platform adapter,
+TypeORM, and PostgreSQL. It provides authentication, company/outlet-scoped
+access, shared master-menu management, outlet menu assignments, inventory,
+sales, and reports.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- API prefix: `/api/v1`
+- Local API: `http://localhost:3001`
+- Swagger UI: `http://localhost:3001/api-docs`
+- OpenAPI JSON: `http://localhost:3001/api-docs/json`
 
-## Description
+For repository-wide setup and architecture, see the
+[root README](../../README.md), [architecture documentation](../../docs/architecture.md),
+[API endpoint reference](../../docs/api-endpoints.md), and
+[scaling plan](../../docs/scaling-plan.md).
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requirements
 
-## Project setup
+- Node.js 24 and npm
+- PostgreSQL 13 or later (local Docker setup uses PostgreSQL 17)
 
-```bash
-$ npm install
+## Configure the environment
+
+From `apps/api`, create the environment file:
+
+```sh
+cp .env.example .env
 ```
 
-## Migration
+Set the database credentials and replace the JWT placeholder with a private
+random secret of at least 32 characters. For a local PostgreSQL service, use
+`DB_HOST=localhost`. When running through the root Docker Compose stack, use
+`DB_HOST=hq-db`; Compose reads the database values from this file.
 
-```
-make migration:run InitSchema
-```
+Add `NODE_ENV=development` to `.env`; it is required by API startup but is not
+currently listed in `.env.example`. `PORT` defaults to `3001`. The example
+contains database connection values, JWT/session configuration, and request
+throttling settings. Never commit `.env` or use development credentials in
+production.
 
-## Database seed data
+## Install, migrate, and run
 
-These are development/demo seeds and are blocked when `NODE_ENV=production`. Set `SEED_HQ_ADMIN_PASSWORD` in the API environment before the first seed run. The seed runner hashes it with bcrypt and creates `admin@example.test`; it never prints or stores the plaintext password. Do not commit the password.
+Install dependencies and apply database migrations:
 
-After applying migrations, run:
-
-```bash
-npm run seed
-```
-
-In the Docker Compose development environment, configure the variable in `apps/api/.env` and run `make seed-run`. After changing dependencies, rebuild the API and refresh its development `node_modules` volume with `docker compose --env-file ./apps/api/.env up --build --force-recreate -V -d hq-api`. The seed data is safe to rerun: catalog and outlet assignments are upserted, inventory is inserted only when missing, demo sales use stable idempotency keys, receipt counters never decrease, and seeded sale items are replaced transactionally. Sample sales are historical records; seeded inventory remains the current stock level. User sessions are not seeded because they represent active authentication state.
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```sh
+npm ci
+npm run migration:run
 ```
 
-## Run tests
+Start the API in watch mode:
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```sh
+npm run start:dev
 ```
 
-## Deployment
+The root Docker Compose configuration also applies migrations to the API
+container after startup. For a convenient local full-stack setup, follow the
+[root README Docker Compose instructions](../../README.md#run-locally-with-docker-compose).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Useful migration commands (run from `apps/api`):
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```sh
+npm run migration:show
+npm run migration:generate -- src/database/migrations/DescribeChange
+npm run migration:revert
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Review generated migrations before applying them. TypeORM schema synchronization
+is disabled; schema changes must use migrations.
+
+## Development seed data
+
+The development seed creates `admin@example.test`, `manager@example.test`,
+`staff@example.test`, and sample company/outlet, menu, inventory, and sales
+data. Set `SEED_HQ_ADMIN_PASSWORD`, `SEED_OUTLET_MANAGER_PASSWORD`, and
+`SEED_OUTLET_STAFF_PASSWORD` in `.env` to override the development-only
+fallback passwords. Passwords must be at least 12 characters and no more than
+72 UTF-8 bytes; they are hashed and must not be committed. Never use seed
+accounts in production. Seeds are blocked when `NODE_ENV=production`.
+
+```sh
+npm run seed:db
+```
+
+Alternatively, `npm run seed` builds the API before seeding. From the repository
+root, use `make seed-run` with the Compose stack running.
+
+## API modules and structure
+
+```text
+src/
+  modules/
+    auth/                 Login, refresh, sessions, password, JWT
+    health/               Database and disk health checks
+    menu-items/           Shared master menu CRUD
+    outlets/              Company-scoped outlet listing
+    outlet-menu-items/    Outlet assignments and price overrides
+    inventories/          Outlet stock listing and adjustment
+    sales/                Sale creation, history, and details
+    reports/              Revenue and top-selling item reports
+  database/
+    entities/             TypeORM entities and relationships
+    migrations/           Versioned PostgreSQL schema changes
+    seeds/                Development/demo data
+  common/                 Guards, decorators, DTOs, filters, pipes, utilities
+  config/                 Environment validation
+  main.ts                 Bootstrap, versioning, Swagger, global handling
+```
+
+Each feature module groups controllers, services, and DTOs. Controllers define
+routes and Swagger metadata; services enforce business rules and use TypeORM
+repositories or transaction managers for data access. Shared request
+validation, authentication/role guards, exception filters, and response
+handling are configured centrally.
+
+## Authentication and tenant access
+
+Most endpoints require a bearer access token. The API supports `SUPER_ADMIN`,
+`HQ_ADMIN`, `OUTLET_MANAGER`, and `OUTLET_STAFF` roles. Super admins operate
+across companies; HQ admins are scoped to their company; outlet users are
+scoped to their assigned outlet. Role and data scope are enforced by the API,
+not only by the web UI.
+
+The master `menu_items` catalog is shared globally. Outlets receive items
+through `outlet_menu_items`, which can specify an outlet price override.
+
+## Sales and data integrity
+
+Sale creation checks outlet menu availability and stock, allocates a
+per-outlet sequential receipt, deducts inventory, and saves sale items within
+a database transaction. An optional `Idempotency-Key` supports safe request
+retries. Database constraints enforce receipt/idempotency uniqueness and
+non-negative stock. Sale items retain the unit price and line total used when
+the sale was made.
+
+See Swagger and [API endpoint reference](../../docs/api-endpoints.md) for all routes,
+request/response schemas, query parameters, and status codes.
+
+## Scripts
+
+Run from `apps/api`:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run start:dev` | Start NestJS in watch mode |
+| `npm run build` | Compile TypeScript to `dist` |
+| `npm run start:prod` | Run the compiled API |
+| `npm run lint` | Run Oxlint on API source and tests |
+| `npm test` | Run unit tests with Vitest |
+| `npm run test:e2e` | Run API end-to-end tests |
+| `npm run test:cov` | Run tests with coverage |
+| `npm run migration:run` | Apply pending migrations |
+| `npm run migration:show` | Show migration status |
+| `npm run db:setup` | Apply migrations and run development seeds |
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This application is private and marked `UNLICENSED` in its package manifest.

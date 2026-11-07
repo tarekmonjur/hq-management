@@ -1,9 +1,9 @@
 # HQ Management
 
-HQ Management is a web application for managing a company's outlets and their
-menus. The repository contains a Next.js web app, a NestJS REST API, and a
-PostgreSQL database. The API provides authentication, health checks, outlet and
-menu-item management, and outlet-specific menu-item pricing.
+HQ Management is a multi-company HQ application for managing outlets, a shared
+master menu, outlet-specific menus and prices, inventory, sales, and reports.
+The repository contains a Next.js/React web app, a NestJS REST API using the
+Express adapter, and a PostgreSQL database.
 
 ## Architecture
 
@@ -15,6 +15,92 @@ menu-item management, and outlet-specific menu-item pricing.
 - **Database:** PostgreSQL 17, available on port `5432`.
 - **Local orchestration:** Docker Compose starts the database, API, and web
   app. The API applies database migrations during startup.
+- **Deployment:** The project is prepared for local Docker Compose use. A
+  production instance URL will be published here after hosting is selected and
+  the deployment is verified.
+
+See [Architecture Documentation](docs/architecture.md) for the component
+diagram, ERD, folder responsibilities, and data/business rules. The separate
+[Scaling Plan](docs/scaling-plan.md) covers the client workload scenario,
+microservices evolution, and future offline POS/KDS strategy.
+
+## Repository structure
+
+```text
+apps/
+  api/
+    src/modules/       NestJS feature modules (controllers, services, DTOs)
+    src/database/      TypeORM entities, migrations, and seed data
+    src/common/        Shared guards, filters, pipes, DTOs, and utilities
+    src/config/        Environment validation
+  web/
+    app/               Next.js routes, pages, layouts, and server handlers
+    components/        Dashboard, menu, POS, sales, reports, and UI
+    lib/api/           Typed API client functions
+    lib/auth/          Session cookies and role helpers
+    lib/validations/   Client-side input schemas
+docs/                  API, architecture, scaling, and client documentation
+.husky/                Git hooks, including commit-msg validation
+```
+
+## API endpoint summary
+
+All API routes use the `/api/v1` prefix. Detailed schemas, parameters,
+validation, and errors are in [Swagger](http://localhost:3001/api-docs) while
+the route list is maintained in [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md).
+Unless noted, routes require authentication. `HQ_ADMIN` is company-scoped,
+outlet roles are outlet-scoped, and `SUPER_ADMIN` can access across companies.
+
+| Method | Endpoint | Purpose / access |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | Public API and database health check |
+| `POST` | `/api/v1/auth/login` | Sign in (public) |
+| `POST` | `/api/v1/auth/refresh` | Refresh session tokens (public) |
+| `GET` | `/api/v1/auth/me` | Current authenticated profile |
+| `GET` | `/api/v1/menu-items` | List/search shared master menu (HQ/Super admin) |
+| `POST` | `/api/v1/menu-items` | Create master item (HQ/Super admin) |
+| `GET` | `/api/v1/outlets` | List outlets in permitted company scope (HQ/Super admin) |
+| `POST` | `/api/v1/outlet-menu-items` | Assign menu item to outlet (HQ/Super admin) |
+| `GET` | `/api/v1/outlet-menu-items` | List assigned outlet menus in permitted scope |
+| `GET` | `/api/v1/inventories` | List inventory in permitted scope |
+| `PUT` | `/api/v1/inventories/:inventoryId` | Set stock quantity (HQ/Super admin) |
+| `POST` | `/api/v1/sales` | Create sale; transactionally deduct stock and allocate receipt |
+| `GET` | `/api/v1/sales` | Search and paginate sales in permitted scope |
+| `GET` | `/api/v1/reports/revenue` | Revenue by outlet/date range in permitted scope |
+| `GET` | `/api/v1/reports/top-items` | Top-selling items in permitted scope |
+
+The sale endpoint accepts an optional `Idempotency-Key` header for safe
+retries. Outlet receipt numbers are allocated sequentially per outlet by the
+API while online. See the Swagger specification for all auth/session and
+feature routes.
+
+## Database schema overview
+
+PostgreSQL stores companies and their outlets/users; menu items form a **shared
+global catalog** and are linked to outlets through outlet-menu assignments.
+Assignments can override prices. Inventory is tracked per outlet and item.
+Sales belong to an outlet and contain sale-item snapshots of quantity and
+price; an outlet-scoped receipt counter and idempotency key protect concurrent
+sale creation and retries. Foreign keys, unique constraints, non-negative
+stock/price checks, and indexes enforce and support these rules.
+
+The API uses TypeORM migrations rather than schema synchronization. Review
+[Architecture Documentation](docs/architecture.md) for the ERD, detailed
+relationships, tenant boundaries, and migration/entity caveats.
+
+## Clean commits
+
+The repository uses **Husky** to run **Commitlint** from the `commit-msg` Git
+hook. Commit messages follow the Conventional Commits format, for example:
+
+```text
+feat: add outlet sales report
+fix: prevent duplicate receipt allocation
+docs: describe offline POS strategy
+```
+
+Install the root development dependencies and run the repository's prepare
+script to configure the hook (`npm install` runs `prepare`).
 
 ## Prerequisites
 

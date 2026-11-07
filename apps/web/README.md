@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HQ Management Web Application
 
-## Getting Started
+The web application is built with Next.js App Router and React. It provides
+the HQ Management dashboard, menu and outlet-menu administration, point of
+sale, sales history, and reports.
 
-First, run the development server:
+- Local web app: `http://localhost:3000`
+- Backend API: NestJS at `http://localhost:3001` by default
+- API docs: `http://localhost:3001/api-docs`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+For the full-stack setup, see the [root README](../../README.md). For system
+design and database relationships, see
+[architecture documentation](../../docs/architecture.md) and the separate
+[scaling plan](../../docs/scaling-plan.md).
+
+## Requirements
+
+- Node.js 24 and npm
+- A running HQ Management API and PostgreSQL database
+
+## Configure and run locally
+
+From `apps/web`, create a local environment file:
+
+```sh
+printf 'API_URL=http://localhost:3001\n' > .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`API_URL` is used by Next.js server routes to reach the NestJS API. It is
+server-side configuration: use `http://hq-api:3001` when the web app runs in
+the root Docker Compose network, and `http://localhost:3001` when running the
+web app directly on your machine.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Install dependencies and start the development server:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+npm ci
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000). The API and database must
+also be configured and running. To start the full local stack with Docker,
+follow the [root README](../../README.md#run-locally-with-docker-compose).
+Do not commit `.env.local` or production secrets.
 
-To learn more about Next.js, take a look at the following resources:
+## Application structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+app/
+  (auth)/login/                Login page
+  (dashboard)/                 Dashboard, POS, menus, outlets, sales, reports
+  api/auth/                     Login and logout server handlers
+  api/backend/[...path]/        Authenticated proxy to the NestJS API
+components/
+  auth/                         Login form
+  dashboard/                    Dashboard shell and overview
+  menu-items/                   Master menu management
+  outlet-menu-items/            Outlet menu assignments and pricing
+  sales/                        POS terminal, sale list, details, receipt
+  reports/                      Revenue and top-items presentation
+  ui/                           Shared UI primitives
+lib/
+  api/                          Typed API client and feature requests
+  auth/                         Cookie, session, and role helpers
+  validations/                  Client-side input schemas
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The browser uses same-origin Next.js routes for backend requests. The server
+proxy forwards requests to NestJS and attaches the access token from HTTP-only
+session cookies; login and token refresh are handled through server routes.
+Feature request functions use the shared API client, and React Query manages
+client-side queries and mutations.
 
-## Deploy on Vercel
+The UI includes login, a role-aware dashboard, master menu and outlet menu
+management, outlet selection, POS sale creation, receipts, sales history, and
+revenue/top-items reports. The POS sends an idempotency key with sale requests
+to make retrying an online request safe. Offline POS synchronization and KDS
+functionality are not currently implemented.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Run from `apps/web`:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start Next.js in development mode |
+| `npm run build` | Create a production build |
+| `npm start` | Serve the production build |
+| `npm run lint` | Run ESLint |
+
+## Configuration and deployment
+
+Set `API_URL` in the server environment to the reachable NestJS API base URL.
+For local development this defaults to `http://localhost:3001`; in Docker
+Compose use `http://hq-api:3001`. Configure production environment values in
+the hosting provider's secure environment settings, not in this repository.
+
+The repository includes a web Dockerfile for container builds. Production
+deployment must also provide the API, PostgreSQL, secure environment
+configuration, and migrations; a Dockerfile by itself is not a deployed
+instance.
+
+## License
+
+This application is private and marked `UNLICENSED` in its package manifest.
