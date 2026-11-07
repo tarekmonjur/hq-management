@@ -68,3 +68,6 @@ migration-generate:
 
 seed-run:
 	$(COMPOSE) exec hq-api npm run seed:db
+
+test:
+	$(COMPOSE) exec hq-api npm run test

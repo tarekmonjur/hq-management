@@ -167,9 +167,22 @@ then run:
 make seed-run
 ```
 
-The seed creates the development admin account `admin@example.test` and
-development sample data. Use the configured password to sign in. Seed data is
+The seed creates the development sample data. Use the configured password to sign in. Seed data is
 for development only; never use a development password in production.
+
+## Pre-Seeded Test Accounts (Role Access Hierarchy)
+
+The application includes seeded accounts with distinct role permissions for end-to-end testing:
+
+- **Role**: HQ Administrator
+  - **Email**: admin@example.test **Password**: Admin@123456
+  - **Scope & Permitted Actions**: Master Menu management, multi-outlet menu assignment & price overrides, consolidated company-wide sales and revenue reports.
+- **Role**: Outlet Manager
+  - **Email**: manager@example.test **Password**: Manager@123456
+  - **Scope & Permitted Actions**: Scoped strictly to Outlet 1: Assigned outlet menu viewing, POS checkout, sales history, and outlet reports. Cannot view other outlets or master menu catalog.
+- **Role**: Outlet Staff
+  - **Email**: staff@example.test **Password**: Staff@123456
+  - **Scope & Permitted Actions**: Scoped strictly to Outlet 2: POS terminal sales, order lookup, and outlet reports.
 
 ## Makefile commands
 
