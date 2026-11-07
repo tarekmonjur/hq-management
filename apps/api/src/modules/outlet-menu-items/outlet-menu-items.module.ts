@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
+  Inventory,
   MenuItem,
   Outlet,
   OutletMenuItem,
@@ -13,7 +14,13 @@ import { OutletMenuItemsService } from './outlet-menu-items.service.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OutletMenuItem, Outlet, MenuItem, User]),
+    TypeOrmModule.forFeature([
+      OutletMenuItem,
+      Outlet,
+      MenuItem,
+      User,
+      Inventory,
+    ]),
     AuthModule,
   ],
   controllers: [OutletMenuItemsController],

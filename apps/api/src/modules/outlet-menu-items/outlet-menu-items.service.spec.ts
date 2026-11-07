@@ -3,11 +3,12 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { QueryFailedError, Repository } from 'typeorm';
+import { DataSource, EntityManager, QueryFailedError, Repository } from 'typeorm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { UserRole } from '../../common/enums/user.enum.js';
 import {
+  Inventory,
   MenuItem,
   Outlet,
   OutletMenuItem,
@@ -20,6 +21,12 @@ import { OutletMenuItemsService } from './outlet-menu-items.service.js';
 
 describe('OutletMenuItemsService', () => {
   let service: OutletMenuItemsService;
+  let dataSource: { transaction: ReturnType<typeof vi.fn> };
+  let manager: {
+    save: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+  };
   let outletMenuItemRepository: {
     create: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
@@ -81,6 +88,14 @@ describe('OutletMenuItemsService', () => {
       remove: vi.fn(),
       createQueryBuilder: vi.fn().mockReturnValue(queryBuilder),
     };
+    manager = {
+      save: vi.fn(async (_entityClass, entity) => entity),
+      findOne: vi.fn().mockResolvedValue(null),
+      create: vi.fn((_entityClass, data) => data),
+    };
+    dataSource = {
+      transaction: vi.fn(async (cb) => cb(manager as unknown as EntityManager)),
+    };
     outletRepository = { findOne: vi.fn().mockResolvedValue(outlet) };
     menuItemRepository = { findOneBy: vi.fn().mockResolvedValue(menuItem) };
     userRepository = {
@@ -97,10 +112,11 @@ describe('OutletMenuItemsService', () => {
       outletRepository as Repository<Outlet>,
       menuItemRepository as Repository<MenuItem>,
       userRepository as Repository<User>,
+      dataSource as unknown as DataSource,
     );
   });
 
-  it('assigns a menu item to a company outlet', async () => {
+  it('assigns a menu item and initializes inventory with quantity 0 when none exists', async () => {
     const saved = {
       id: 'assignment-id',
       outletId: outlet.id,
@@ -110,7 +126,13 @@ describe('OutletMenuItemsService', () => {
       createdAt: new Date('2026-11-06T00:00:00.000Z'),
       updatedAt: new Date('2026-11-06T00:00:00.000Z'),
     } as OutletMenuItem;
-    vi.mocked(outletMenuItemRepository.save).mockResolvedValue(saved);
+    manager.save.mockImplementation(async (target, entity) => {
+      if (target === OutletMenuItem) {
+        return saved;
+      }
+      return entity;
+    });
+    manager.findOne.mockResolvedValue(null);
 
     await expect(
       service.create('user-id', {
@@ -128,6 +150,73 @@ describe('OutletMenuItemsService', () => {
     expect(outletRepository.findOne).toHaveBeenCalledWith({
       where: { id: outlet.id, companyId: 'company-id' },
     });
+    expect(dataSource.transaction).toHaveBeenCalled();
+    expect(manager.save).toHaveBeenCalledWith(
+      OutletMenuItem,
+      expect.objectContaining({
+        outletId: outlet.id,
+        menuItemId: menuItem.id,
+        outletPrice: 250,
+        isActive: false,
+      }),
+    );
+    expect(manager.findOne).toHaveBeenCalledWith(Inventory, {
+      where: { outletId: outlet.id, menuItemId: menuItem.id },
+    });
+    expect(manager.create).toHaveBeenCalledWith(Inventory, {
+      outletId: outlet.id,
+      menuItemId: menuItem.id,
+      quantity: 0,
+    });
+    expect(manager.save).toHaveBeenCalledWith(
+      Inventory,
+      expect.objectContaining({
+        outletId: outlet.id,
+        menuItemId: menuItem.id,
+        quantity: 0,
+      }),
+    );
+  });
+
+  it('assigns a menu item and preserves existing inventory when already present', async () => {
+    const saved = {
+      id: 'assignment-id',
+      outletId: outlet.id,
+      menuItemId: menuItem.id,
+      outletPrice: 250,
+      isActive: false,
+      createdAt: new Date('2026-11-06T00:00:00.000Z'),
+      updatedAt: new Date('2026-11-06T00:00:00.000Z'),
+    } as OutletMenuItem;
+    manager.save.mockImplementation(async (target, entity) => {
+      if (target === OutletMenuItem) {
+        return saved;
+      }
+      return entity;
+    });
+    manager.findOne.mockResolvedValue({
+      id: 'existing-inv',
+      outletId: outlet.id,
+      menuItemId: menuItem.id,
+      quantity: 50,
+    } as Inventory);
+
+    await expect(
+      service.create('user-id', {
+        outletId: outlet.id,
+        menuItemId: menuItem.id,
+        outletPrice: 250,
+      } as CreateOutletMenuItemDto),
+    ).resolves.toMatchObject({
+      id: 'assignment-id',
+      outletName: 'Downtown Branch',
+      menuItemName: 'Chicken Burger',
+      outletPrice: 250,
+      isActive: false,
+    });
+
+    expect(manager.create).not.toHaveBeenCalledWith(Inventory, expect.anything());
+    expect(manager.save).toHaveBeenCalledTimes(1); // Only OutletMenuItem saved
   });
 
   it('rejects assignment when the outlet or menu item is missing', async () => {
@@ -152,7 +241,7 @@ describe('OutletMenuItemsService', () => {
   });
 
   it('maps a duplicate assignment to a conflict', async () => {
-    vi.mocked(outletMenuItemRepository.save).mockRejectedValue(
+    manager.save.mockRejectedValue(
       new QueryFailedError(
         'insert',
         [],
@@ -245,6 +334,31 @@ describe('OutletMenuItemsService', () => {
     expect(queryBuilder.andWhere).not.toHaveBeenCalledWith(
       'assignment.outletId = :outletId',
       { outletId: 'other-outlet' },
+    );
+  });
+
+  it('lets a super admin search any outlet menu without a company scope', async () => {
+    vi.mocked(userRepository.findOne).mockResolvedValue({
+      id: 'super-id',
+      role: UserRole.SUPER_ADMIN,
+      companyId: null,
+      outletId: null,
+      isActive: true,
+    } as User);
+    queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+    await service.findAll('super-id', {
+      page: 1,
+      limit: 20,
+      outletId: outlet.id,
+      search: 'burger',
+      isActive: true,
+    } as ListOutletMenuItemsQueryDto);
+
+    expect(queryBuilder.where).not.toHaveBeenCalled();
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'assignment.outletId = :outletId',
+      { outletId: outlet.id },
     );
   });
 

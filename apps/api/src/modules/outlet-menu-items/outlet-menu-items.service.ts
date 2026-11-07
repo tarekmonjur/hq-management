@@ -6,11 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { UserRole } from '../../common/enums/user.enum.js';
 import { hasConstraint } from '../../common/utils/postgres-error.util.js';
 import {
+  Inventory,
   MenuItem,
   Outlet,
   OutletMenuItem,
@@ -43,6 +44,7 @@ export class OutletMenuItemsService {
     private readonly menuItemRepository: Repository<MenuItem>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
@@ -67,7 +69,28 @@ export class OutletMenuItemsService {
     });
 
     try {
-      const saved = await this.outletMenuItemRepository.save(assignment);
+      const saved = await this.dataSource.transaction(async (manager) => {
+        const savedAssignment = await manager.save(OutletMenuItem, assignment);
+
+        const existingInventory = await manager.findOne(Inventory, {
+          where: {
+            outletId: dto.outletId,
+            menuItemId: dto.menuItemId,
+          },
+        });
+
+        if (!existingInventory) {
+          const inventory = manager.create(Inventory, {
+            outletId: dto.outletId,
+            menuItemId: dto.menuItemId,
+            quantity: 0,
+          });
+          await manager.save(Inventory, inventory);
+        }
+
+        return savedAssignment;
+      });
+
       return this.toView(saved, menuItem.name, outlet.name);
     } catch (error) {
       this.throwKnownConstraintError(error);
@@ -76,13 +99,24 @@ export class OutletMenuItemsService {
   }
 
   async findAll(userId: string, query: ListOutletMenuItemsQueryDto) {
-    const access = await this.requireAccess(userId);
-    const outletId = this.scopedOutletId(access, query.outletId);
+    const access = await this.requireListAccess(userId);
+    const outletId =
+      access.role === UserRole.SUPER_ADMIN
+        ? query.outletId
+        : this.scopedOutletId(
+            { role: access.role, outletId: access.outletId },
+            query.outletId,
+          );
     const queryBuilder = this.outletMenuItemRepository
       .createQueryBuilder('assignment')
       .innerJoinAndSelect('assignment.menuItem', 'menuItem')
-      .innerJoinAndSelect('assignment.outlet', 'outlet')
-      .where('outlet.companyId = :companyId', { companyId: access.companyId });
+      .innerJoinAndSelect('assignment.outlet', 'outlet');
+
+    if (access.role !== UserRole.SUPER_ADMIN) {
+      queryBuilder.where('outlet.companyId = :companyId', {
+        companyId: access.companyId,
+      });
+    }
 
     if (outletId) {
       queryBuilder.andWhere('assignment.outletId = :outletId', { outletId });
@@ -157,6 +191,45 @@ export class OutletMenuItemsService {
 
   private async requireCompanyId(userId: string): Promise<string> {
     return (await this.requireAccess(userId)).companyId;
+  }
+
+  private async requireListAccess(userId: string): Promise<{
+    companyId: string | null;
+    role: UserRole;
+    outletId: string | null;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        companyId: true,
+        outletId: true,
+        isActive: true,
+      },
+    });
+
+    if (!user?.isActive) {
+      throw new ForbiddenException('Outlet menu access is not available');
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return {
+        companyId: user.companyId ?? null,
+        role: user.role,
+        outletId: user.outletId ?? null,
+      };
+    }
+
+    if (!user.companyId) {
+      throw new ForbiddenException('Outlet menu access is not available');
+    }
+
+    return {
+      companyId: user.companyId,
+      role: user.role,
+      outletId: user.outletId ?? null,
+    };
   }
 
   private async requireAccess(userId: string): Promise<{
