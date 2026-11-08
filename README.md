@@ -21,7 +21,7 @@ Express adapter, and a PostgreSQL database.
 
 See [Architecture Documentation](docs/architecture.md) for the component
 diagram, ERD, folder responsibilities, and data/business rules. The separate
-[Scaling Plan](docs/scaling-plan.md) covers the client workload scenario,
+[Scaling Plan](docs/scaling-plan-architecture.md) covers the client workload scenario,
 microservices evolution, and future offline POS/KDS strategy.
 
 ## Repository structure
@@ -47,7 +47,7 @@ docs/                  API, architecture, scaling, and client documentation
 
 All API routes use the `/api/v1` prefix. Detailed schemas, parameters,
 validation, and errors are in [Swagger](http://localhost:3001/api-docs) while
-the route list is maintained in [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md).
+the route list is maintained in [docs/API_ENDPOINTS.md](docs/api-endpoints.md).
 Unless noted, routes require authentication. `HQ_ADMIN` is company-scoped,
 outlet roles are outlet-scoped, and `SUPER_ADMIN` can access across companies.
 

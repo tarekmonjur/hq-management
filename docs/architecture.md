@@ -3,7 +3,7 @@
 This document describes the current HQ Management implementation. Scaling,
 microservices, and offline POS/KDS recommendations are proposals, not claims
 that those capabilities are already deployed. See the separate
-[Scaling Plan](./scaling-plan.md) for the full workload and evolution strategy.
+[Scaling Plan](./scaling-plan-architecture.md) for the full workload and evolution strategy.
 
 ## Technology and system context
 
@@ -12,7 +12,7 @@ that those capabilities are already deployed. See the separate
   at port `3001`, with URI versioning under `/api/v1`.
 - **Persistence:** PostgreSQL 17 accessed with TypeORM and explicit migrations.
 - **API reference:** Swagger UI at `/api-docs`; the route summary is in
-  [API_ENDPOINTS.md](./API_ENDPOINTS.md).
+  [API_ENDPOINTS.md](./api-endpoints.md).
 - **Local orchestration:** Docker Compose starts PostgreSQL, API, and web app.
   Compose and Dockerfiles are development/local setup, not evidence of a
   production deployment.
@@ -223,9 +223,9 @@ erDiagram
 - `docker-compose.yml` and the per-app Dockerfiles support the repository's
   local development workflow. See [README setup](../README.md#run-locally-with-docker-compose).
 - API detail and interactive schemas: `/api-docs`; concise route list:
-  [API endpoints](./API_ENDPOINTS.md).
+  [API endpoints](./api-endpoints.md).
 - Commit messages are checked by the Husky `commit-msg` hook using Commitlint
   and Conventional Commits; details and examples are in the README.
-- The separate [Scaling Plan](./scaling-plan.md) describes the requested
+- The separate [Scaling Plan](./scaling-plan-architecture.md) describes the requested
   transaction volume, reporting, infrastructure, microservices, and offline
   POS/KDS evolution.
